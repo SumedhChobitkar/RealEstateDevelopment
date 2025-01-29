@@ -1,7 +1,11 @@
 package com.RealEstateDevelopment.Controller;
+
 import com.RealEstateDevelopment.Entity.Admin;
 import com.RealEstateDevelopment.Exception.UserNotFoundException;
+import com.RealEstateDevelopment.Repository.ForgotPasswordOtpRepository;
 import com.RealEstateDevelopment.Service.AdminService;
+import com.RealEstateDevelopment.Service.EmailService;
+import com.RealEstateDevelopment.ServiceImpl.ForgotPasswordService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
@@ -11,7 +15,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-
 import java.io.IOException;
 
 @RestController
@@ -23,6 +26,15 @@ public class AdminController {
 
     @Autowired
     private AdminService adminService;
+
+    @Autowired
+    private ForgotPasswordOtpRepository otpRepository;  // Repository for OTPs
+
+    @Autowired
+    private EmailService emailService;
+
+    @Autowired
+    private ForgotPasswordService forgotPasswordService;
 
     @PostMapping("/registerAdmin")
     public ResponseEntity<String> registerAdmin(
@@ -203,7 +215,5 @@ public class AdminController {
             return ResponseEntity.status(500).body("An unexpected error occurred: " + e.getMessage());
         }
     }
-
-
 
 }

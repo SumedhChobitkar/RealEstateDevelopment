@@ -2,7 +2,6 @@ package com.RealEstateDevelopment.Service;
 
 import com.RealEstateDevelopment.Entity.Property;
 import org.springframework.web.multipart.MultipartFile;
-
 import java.util.List;
 
 public interface PropertyService {

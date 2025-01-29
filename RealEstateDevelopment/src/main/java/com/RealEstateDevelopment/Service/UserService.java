@@ -1,15 +1,19 @@
 package com.RealEstateDevelopment.Service;
 
 import com.RealEstateDevelopment.Entity.User;
-import org.springframework.web.multipart.MultipartFile;
+import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
-import java.util.Optional;
 
 public interface UserService {
-    User registerUser(User user, MultipartFile profilePicture) throws Exception;
+
+    String registerTemporaryUser(User user);
+
+    String verifyOtpToRegister(String email, String otp);
+
     User loginUser(String username, String password) throws Exception;
 
-    User updateUser(Long id, User updatedUser, MultipartFile profilePicture) throws Exception;
+    @Transactional
+    User updateUserDetails(Long userId, User user);
 
     void deleteUser(Long id) throws Exception;
 
@@ -17,8 +21,10 @@ public interface UserService {
 
     List<User> getAllUsers();
 
-    void changePassword(Long id, String oldPassword, String newPassword) throws Exception;
+    void changePassword(Long id, String oldPassword, String newPassword, String confirmPassword) throws Exception;
 
     void logoutUser(String username) throws Exception;
 
+    @Transactional
+    String deleteProfilePicture(Long userId);
 }
