@@ -9,6 +9,7 @@ import com.RealEstateDevelopment.CommanUtil.ValidationClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import java.sql.Timestamp;
@@ -21,6 +22,9 @@ public class AgentServiceImpl implements AgentService {
 
     @Autowired
     private AgentRepository agentRepository;
+
+    @Autowired
+    private BCryptPasswordEncoder passwordEncoder;
 
     private static final Logger logger = LoggerFactory.getLogger(AgentServiceImpl.class);
 
@@ -35,6 +39,9 @@ public class AgentServiceImpl implements AgentService {
             if (profilePicture != null && !isValidImageType(profilePicture)) {
                 throw new IllegalArgumentException("Invalid profile picture type. Only PNG, JPG, and JPEG are allowed.");
             }
+
+            // Encrypt the password before saving
+            agent.setPassword(passwordEncoder.encode(agent.getPassword()));
 
             agent.setProfilePicture(profilePicture != null ? profilePicture.getBytes() : null);
             agent.setCreatedAt(Timestamp.from(Instant.now()));
@@ -56,13 +63,22 @@ public class AgentServiceImpl implements AgentService {
         try {
             logger.info("Attempting to login agent with username: {}", username);
             Optional<Agent> optionalAgent = agentRepository.findByUsername(username);
-            if (optionalAgent.isEmpty() || !optionalAgent.get().getPassword().equals(password)) {
+
+            if (optionalAgent.isEmpty()) {
+                logger.warn("Invalid login attempt for username: {}", username);
+                throw new IllegalArgumentException("Invalid username or password.");
+            }
+
+            Agent agent = optionalAgent.get();
+
+            // Compare raw password with the encoded password
+            if (!passwordEncoder.matches(password, agent.getPassword())) {
                 logger.warn("Invalid login attempt for username: {}", username);
                 throw new IllegalArgumentException("Invalid username or password.");
             }
 
             logger.info("Agent with username: {} logged in successfully.", username);
-            return optionalAgent.get();
+            return agent;
         } catch (Exception e) {
             logger.error("Error during agent login: {}", e.getMessage(), e);
             throw new Exception("Error during agent login: " + e.getMessage(), e);
@@ -84,6 +100,7 @@ public class AgentServiceImpl implements AgentService {
                 throw new IllegalArgumentException("Invalid profile picture type. Only PNG, JPG, and JPEG are allowed.");
             }
 
+            // Update fields
             existingAgent.setFullname(updatedAgent.getFullname());
             existingAgent.setEmail(updatedAgent.getEmail());
             existingAgent.setMobileNo(updatedAgent.getMobileNo());
@@ -91,6 +108,12 @@ public class AgentServiceImpl implements AgentService {
             existingAgent.setExperience(updatedAgent.getExperience());
             existingAgent.setProfilePicture(profilePicture != null ? profilePicture.getBytes() : existingAgent.getProfilePicture());
             existingAgent.setUpdatedAt(Timestamp.from(Instant.now()));
+
+            // Update password only if a new one is provided
+            if (updatedAgent.getPassword() != null && !updatedAgent.getPassword().isEmpty()) {
+                logger.info("Updating password for agent with ID: {}", id);
+                existingAgent.setPassword(passwordEncoder.encode(updatedAgent.getPassword()));
+            }
 
             Agent savedAgent = agentRepository.save(existingAgent);
             logger.info("Agent with ID: {} updated successfully.", id);
@@ -100,6 +123,7 @@ public class AgentServiceImpl implements AgentService {
             throw new Exception("Error updating agent: " + e.getMessage(), e);
         }
     }
+
 
     @Override
     public void deleteAgent(Long id) throws Exception {
@@ -157,12 +181,15 @@ public class AgentServiceImpl implements AgentService {
             logger.info("Attempting to change password for agent with ID: {}", id);
             Agent agent = agentRepository.findById(id)
                     .orElseThrow(() -> new IllegalArgumentException("Agent not found."));
-            if (!agent.getPassword().equals(oldPassword)) {
+
+            // Check if old password matches the stored encoded password
+            if (!passwordEncoder.matches(oldPassword, agent.getPassword())) {
                 logger.warn("Old password does not match for agent with ID: {}", id);
                 throw new IllegalArgumentException("Old password is incorrect.");
             }
 
-            agent.setPassword(newPassword);
+            // Encode new password before saving
+            agent.setPassword(passwordEncoder.encode(newPassword));
             agent.setUpdatedAt(Timestamp.from(Instant.now()));
             agentRepository.save(agent);
             logger.info("Password changed successfully for agent with ID: {}", id);
