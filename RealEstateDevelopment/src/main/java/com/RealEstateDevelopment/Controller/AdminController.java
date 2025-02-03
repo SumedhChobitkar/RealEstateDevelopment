@@ -1,10 +1,14 @@
 package com.RealEstateDevelopment.Controller;
 
 import com.RealEstateDevelopment.Entity.Admin;
+import com.RealEstateDevelopment.Entity.TemporaryProperty;
 import com.RealEstateDevelopment.Exception.UserNotFoundException;
 import com.RealEstateDevelopment.Repository.ForgotPasswordOtpRepository;
+import com.RealEstateDevelopment.Repository.TempPropertyRepository;
 import com.RealEstateDevelopment.Service.AdminService;
 import com.RealEstateDevelopment.Service.EmailService;
+import com.RealEstateDevelopment.Service.PEmailService;
+import com.RealEstateDevelopment.Service.PropertyService;
 import com.RealEstateDevelopment.ServiceImpl.ForgotPasswordService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -16,6 +20,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/admin")
@@ -35,6 +40,13 @@ public class AdminController {
 
     @Autowired
     private ForgotPasswordService forgotPasswordService;
+
+    @Autowired
+    private PropertyService propertyService;
+    @Autowired
+    private TempPropertyRepository tempPropertyRepository;
+    @Autowired
+    private com.RealEstateDevelopment.Service.PEmailService PEmailService;
 
     @PostMapping("/registerAdmin")
     public ResponseEntity<String> registerAdmin(
@@ -214,6 +226,22 @@ public class AdminController {
             logger.error("An unexpected error occurred: {}", e.getMessage());
             return ResponseEntity.status(500).body("An unexpected error occurred: " + e.getMessage());
         }
+    }
+
+    @PostMapping("/approve/{tempPropertyId}/{adminId}")
+    public String approveProperty(@PathVariable Long tempPropertyId, @PathVariable Long adminId) {
+        return propertyService.approveProperty(tempPropertyId, adminId);
+    }
+    @PostMapping("/reject/{tempPropertyId}/{adminId}")
+    public String rejectProperty(@PathVariable Long tempPropertyId, @PathVariable Long adminId) {
+        return propertyService.rejectProperty(tempPropertyId, adminId);
+    }
+
+    @GetMapping("/pending")
+    public List<TemporaryProperty> getAllPendingProperties() {
+        List<TemporaryProperty> pendingProperties = propertyService.getAllPendingProperties();
+        logger.info("Fetched {} pending properties.", pendingProperties.size());
+        return pendingProperties;
     }
 
 }
