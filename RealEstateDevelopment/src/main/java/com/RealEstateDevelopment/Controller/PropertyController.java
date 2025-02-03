@@ -1,6 +1,8 @@
 package com.RealEstateDevelopment.Controller;
 
 import com.RealEstateDevelopment.Entity.Property;
+import com.RealEstateDevelopment.Entity.TemporaryProperty;
+import com.RealEstateDevelopment.Service.PEmailService;
 import com.RealEstateDevelopment.Service.PropertyService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -13,11 +15,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
 import java.util.List;
 
 @RestController
-@RequestMapping("api/properties")
+@RequestMapping("/api/properties")
 @CrossOrigin("*")
 public class PropertyController {
 
@@ -25,28 +26,38 @@ public class PropertyController {
 
     @Autowired
     private PropertyService propertyService;
+    @Autowired
+    private PEmailService PEmailService;
 
-    @PostMapping("/saveProperty")
-    public ResponseEntity<Property> saveProperty(
+
+    @PostMapping("/saveProperty/{agentId}")
+    public ResponseEntity<TemporaryProperty> saveProperty(
+            @PathVariable Long agentId,
             @RequestParam(value = "profilePictures", required = false) MultipartFile[] files,
-            @RequestParam("propertyData") String propertyData) {
+            @RequestParam("recipientEmail") String recipientEmail, // Add recipient email as a request parameter
+            @RequestPart("property") String propertyJson) { // Accept Property object directly
         try {
             logger.info("Request to save property with multiple images received");
 
 
-            Property property = new ObjectMapper().readValue(propertyData, Property.class);
+            // Deserialize the JSON string to Property object
+            ObjectMapper objectMapper = new ObjectMapper();
+            Property property = objectMapper.readValue(propertyJson, Property.class);
+            TemporaryProperty savedProperty = propertyService.saveProperty(property, files, agentId);
 
+            // Send email notification after property is saved
+            String subject = "New Property Added";
+            String body = "A new property has been successfully added to the database. Property details: " + savedProperty.toString();
 
-            Property savedProperty = propertyService.saveProperty(property, files);
+            PEmailService.sendEmail(recipientEmail, subject, body); // Use the recipient email from the request
 
-            return new ResponseEntity<>(savedProperty, HttpStatus.CREATED);
+            return ResponseEntity.ok(savedProperty);
 
-        } catch (IOException e) {
+        } catch (Exception e) {
             logger.error("Error while saving property", e);
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
-
     @GetMapping("/getAllProperties")
     public ResponseEntity<List<Property>> getAllProperties() {
         try {
@@ -109,21 +120,23 @@ public class PropertyController {
             throw e;
         }
     }
-    @GetMapping("/search")
-    public ResponseEntity<List<Property>> searchProperties(
-            @RequestParam(value = "propertyType", required = false) String propertyType,
-            @RequestParam(value = "minPrice", required = false) Double minPrice,
-            @RequestParam(value = "maxPrice", required = false) Double maxPrice,
-            @RequestParam(value = "bedrooms", required = false) Integer bedrooms,
-            @RequestParam(value = "bathrooms", required = false) Integer bathrooms,
-            @RequestParam(value = "location", required = false) String location) {
+
+@GetMapping("/search")
+public ResponseEntity<List<Property>> searchProperties(
+        @RequestParam(value = "propertyType", required = false) String propertyType,
+        @RequestParam(value = "minPrice", required = false) Double minPrice,
+        @RequestParam(value = "maxPrice", required = false) Double maxPrice,
+        @RequestParam(value = "bedrooms", required = false) Integer bedrooms,
+        @RequestParam(value = "bathrooms", required = false) Integer bathrooms,
+        @RequestParam(value = "location", required = false) String location,
+        @RequestParam(value = "price", required = false) Double price){
 
         try {
             logger.info("Request received for searching properties with filters: propertyType={}, minPrice={}, maxPrice={}, bedrooms={}, bathrooms={}, location={}",
                     propertyType, minPrice, maxPrice, bedrooms, bathrooms, location);
 
-            // Call the service method to get filtered properties
-            List<Property> properties = propertyService.searchProperties(propertyType, minPrice, maxPrice, bedrooms, bathrooms, location);
+
+            List<Property> properties = propertyService.searchProperties(propertyType, minPrice, maxPrice, bedrooms, bathrooms, location, price);
 
             // If no properties are found, return 204 No Content.
             if (properties.isEmpty()) {
