@@ -37,30 +37,49 @@ public class UserController {
     @Autowired
     private ForgotPasswordService forgotPasswordService;
 
-    @PostMapping("/registerTemporaryUser")
-    public ResponseEntity<String> registerTemporaryUser(@RequestPart("userData") String userData,
-                                               @RequestPart("profilePicture") MultipartFile multipartFile) throws JsonProcessingException {
-        ObjectMapper objectMapper = new ObjectMapper();
-        User user = objectMapper.readValue(userData, User.class);
-        try {
-            if (multipartFile != null && !multipartFile.isEmpty()) {
-                String contentType = multipartFile.getContentType();
-                if (contentType == null || isValidImageType(contentType)) {
-                    return ResponseEntity.badRequest().body("Invalid profile picture format. Only JPEG and PNG and png are supported.");
-                }
-                user.setProfilePicture(multipartFile.getBytes());
-            } else {
-                user.setProfilePicture(null);
-            }
-            String message = userService.registerTemporaryUser(user);
-            return ResponseEntity.ok(message);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        } catch (Exception e) {
-            return ResponseEntity.status(500).body("An unexpected error occurred: " + e.getMessage());
-        }
-    }
+//    @PostMapping("/registerTemporaryUser")
+//    public ResponseEntity<String> registerTemporaryUser(@RequestPart("userData") String userData,
+//                                               @RequestPart("profilePicture") MultipartFile multipartFile) throws JsonProcessingException {
+//        ObjectMapper objectMapper = new ObjectMapper();
+//        User user = objectMapper.readValue(userData, User.class);
+//        try {
+//            if (multipartFile != null && !multipartFile.isEmpty()) {
+//                String contentType = multipartFile.getContentType();
+//                if (contentType == null || isValidImageType(contentType)) {
+//                    return ResponseEntity.badRequest().body("Invalid profile picture format. Only JPEG and PNG and png are supported.");
+//                }
+//                user.setProfilePicture(multipartFile.getBytes());
+//            } else {
+//                user.setProfilePicture(null);
+//            }
+//            String message = userService.registerTemporaryUser(user);
+//            return ResponseEntity.ok(message);
+//        } catch (IllegalArgumentException e) {
+//            return ResponseEntity.badRequest().body(e.getMessage());
+//        } catch (Exception e) {
+//            return ResponseEntity.status(500).body("An unexpected error occurred: " + e.getMessage());
+//        }
+//    }
 
+    @PostMapping("/registerTemporaryUser")
+    public ResponseEntity<Map<String, String>> registerTemporaryUser(@RequestPart("userData") String userData,
+                                                                     @RequestPart("profilePicture") MultipartFile multipartFile) throws JsonProcessingException {
+        ObjectMapper objectMapper = new ObjectMapper();
+        Map<String, Object> userDataMap = objectMapper.readValue(userData, Map.class);
+        User user = objectMapper.readValue(userData, User.class);
+        try {    if (multipartFile != null && !multipartFile.isEmpty())
+        {      String contentType = multipartFile.getContentType();
+            if (contentType == null || !isValidImageType(contentType))
+            {
+                return ResponseEntity.badRequest().body(Map.of("message", "Invalid profile picture format. Only JPEG and PNG are supported."));
+            }      user.setProfilePicture(multipartFile.getBytes());    } else {      user.setProfilePicture(null);    }
+            String message = userService.registerTemporaryUser(user);
+            return ResponseEntity.ok(Map.of("message", message));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of("message", "An unexpected error occurred: " + e.getMessage()));
+        }}
     @PostMapping("/verifyOtpToRegisterUser")
     public ResponseEntity<String> verifyUserOtpToRegisterUser(@RequestParam String email, @RequestParam String otp) {
         try {
