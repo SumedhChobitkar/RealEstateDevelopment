@@ -19,7 +19,7 @@ public interface PropertyService {
 //
 //    List<Property> searchProperties(String propertyType, Double minPrice, Double maxPrice,
 //                                    Integer bedrooms, Integer bathrooms, String location);
-public TemporaryProperty saveProperty(Property property, MultipartFile[] files, Long agentId);
+public TemporaryProperty saveProperty(Property property, MultipartFile[] files, Long agentId,MultipartFile video);
     //Property saveProperty(Property property, MultipartFile[] files);
 
     Property updateProperty(Long id, Property property, List<MultipartFile> files);

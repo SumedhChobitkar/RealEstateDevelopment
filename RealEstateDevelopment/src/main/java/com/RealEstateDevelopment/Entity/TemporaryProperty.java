@@ -35,7 +35,7 @@ public class TemporaryProperty {
         private String status;
 
         private List<String> galleryImages = new ArrayList<>(); // Initialize to avoid shared references
-
+        private String videoPath;
         private String proximity;
         //        @ManyToOne // Many properties can belong to one agent
 //        @JoinColumn(name = "agent_id") // Foreign key column in the property table
