@@ -20,7 +20,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/admin")
@@ -95,24 +97,55 @@ public class AdminController {
                 contentType.equalsIgnoreCase("image/jpg");
     }
 
+//    @PostMapping("/loginAdmin")
+//    public ResponseEntity<String> loginAdmin(@RequestParam String username, @RequestParam String password) {
+//        try {
+//            logger.info("Login attempt for username: {}", username);
+//            String result = adminService.loginAdmin(username, password);
+//            return ResponseEntity.status(HttpStatus.OK).body("Admin Login Successfully");
+//        } catch (UserNotFoundException e) {
+//            logger.error("Error occurred during login: {}", e.getMessage());
+//            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Admin not found with username: " + username);
+//        } catch (RuntimeException e) {
+//            logger.error("Invalid credentials for username: {}", username);
+//            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid credentials");
+//        } catch (Exception e) {
+//            logger.error("An unexpected error occurred: {}", e.getMessage());
+//            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An unexpected error occurred");
+//        }
+//    }
+
     @PostMapping("/loginAdmin")
-    public ResponseEntity<String> loginAdmin(@RequestParam String username, @RequestParam String password) {
+    public ResponseEntity<Map<String, Object>> loginAdmin(@RequestParam String username, @RequestParam String password) {
+        Map<String, Object> response = new HashMap<>();
+
         try {
             logger.info("Login attempt for username: {}", username);
             String result = adminService.loginAdmin(username, password);
-            return ResponseEntity.status(HttpStatus.OK).body("Admin Login Successfully");
+
+            response.put("status", 200);
+            response.put("message", "Admin Login Successfully");
+            return ResponseEntity.ok(response);
+
         } catch (UserNotFoundException e) {
             logger.error("Error occurred during login: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Admin not found with username: " + username);
+            response.put("status", 404);
+            response.put("message", "Admin not found with username: " + username);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+
         } catch (RuntimeException e) {
             logger.error("Invalid credentials for username: {}", username);
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid credentials");
+            response.put("status", 401);
+            response.put("message", "Invalid credentials");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+
         } catch (Exception e) {
             logger.error("An unexpected error occurred: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An unexpected error occurred");
+            response.put("status", 500);
+            response.put("message", "An unexpected error occurred");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
     }
-
     @DeleteMapping("/deleteAdmin/{adminId}")
     public ResponseEntity<?> deleteAdmin(@PathVariable Long adminId) {
         try {
@@ -228,13 +261,32 @@ public class AdminController {
         }
     }
 
+//    @PostMapping("/approve/{tempPropertyId}/{adminId}")
+//    public String approveProperty(@PathVariable Long tempPropertyId, @PathVariable Long adminId) {
+//        return propertyService.approveProperty(tempPropertyId, adminId);
+//    }
+
     @PostMapping("/approve/{tempPropertyId}/{adminId}")
-    public String approveProperty(@PathVariable Long tempPropertyId, @PathVariable Long adminId) {
-        return propertyService.approveProperty(tempPropertyId, adminId);
+    public ResponseEntity<Map<String, String>> approveProperty(@PathVariable Long tempPropertyId, @PathVariable Long adminId) {
+        String result = propertyService.approveProperty(tempPropertyId, adminId);
+        // JSON Response for use map edited akk
+        Map<String, String> response = new HashMap<>();
+        response.put("message", result);
+        return ResponseEntity.ok(response);
     }
+//    @PostMapping("/reject/{tempPropertyId}/{adminId}")
+//    public String rejectProperty(@PathVariable Long tempPropertyId, @PathVariable Long adminId) {
+//        return propertyService.rejectProperty(tempPropertyId, adminId);
+//    }
+
     @PostMapping("/reject/{tempPropertyId}/{adminId}")
-    public String rejectProperty(@PathVariable Long tempPropertyId, @PathVariable Long adminId) {
-        return propertyService.rejectProperty(tempPropertyId, adminId);
+    public ResponseEntity<Map<String, String>> rejectProperty(@PathVariable Long tempPropertyId, @PathVariable Long adminId) {
+        String result = propertyService.rejectProperty(tempPropertyId, adminId);
+        // JSON Response for use map edited akk
+        Map<String, String> response = new HashMap<>();
+        response.put("message", result);
+
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/pending")

@@ -15,6 +15,8 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -145,16 +147,36 @@ public class UserController {
         }
     }
 
+//    @DeleteMapping("/deleteUser/{userId}")
+//    public ResponseEntity<?> deleteUser(@PathVariable Long userId) {
+//        try {
+//            logger.info("Attempting to delete user with ID: {}", userId);
+//            userService.deleteUser(userId);
+//            logger.info("User with ID: {} deleted successfully.", userId);
+//            return ResponseEntity.ok("User deleted successfully");
+//        } catch (Exception e) {
+//            logger.error("Error during user deletion for ID {}: {}", userId, e.getMessage(), e);
+//            return ResponseEntity.badRequest().body("Error during user deletion: " + e.getMessage());
+//        }
+//    }
+
     @DeleteMapping("/deleteUser/{userId}")
-    public ResponseEntity<?> deleteUser(@PathVariable Long userId) {
+    public ResponseEntity<Map<String, Object>> deleteUser(@PathVariable Long userId) {
+        Map<String, Object> response = new HashMap<>();
         try {
             logger.info("Attempting to delete user with ID: {}", userId);
             userService.deleteUser(userId);
             logger.info("User with ID: {} deleted successfully.", userId);
-            return ResponseEntity.ok("User deleted successfully");
+
+            response.put("status", 200);
+            response.put("message", "User deleted successfully");
+            return ResponseEntity.ok(response);
         } catch (Exception e) {
             logger.error("Error during user deletion for ID {}: {}", userId, e.getMessage(), e);
-            return ResponseEntity.badRequest().body("Error during user deletion: " + e.getMessage());
+
+            response.put("status", 400);
+            response.put("message", "Error during user deletion: " + e.getMessage());
+            return ResponseEntity.badRequest().body(response);
         }
     }
 
