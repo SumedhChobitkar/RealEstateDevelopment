@@ -23,18 +23,15 @@ public class Property {
     private Double size;
     private String address;
     private Integer yearBuilt;
-
     private String propertyType;
     private Integer bedrooms;
     private Integer bathrooms;
 
 
-    private List<String> amenities = new ArrayList<>(); // Initialize to avoid shared references
 
+    private List<String> amenities = new ArrayList<>(); // Initialize to avoid shared references
     private String features;
     private String status;
-
-
     private List<String> galleryImages = new ArrayList<>(); // Initialize to avoid shared references
 
     private String proximity;

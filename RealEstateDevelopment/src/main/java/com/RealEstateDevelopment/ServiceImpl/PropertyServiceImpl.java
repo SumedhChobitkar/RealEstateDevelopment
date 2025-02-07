@@ -47,7 +47,7 @@ public class PropertyServiceImpl implements PropertyService {
 
 
     @Override
-    public TemporaryProperty saveProperty(Property property, MultipartFile[] files, Long agentId) {
+    public TemporaryProperty saveProperty(Property property, MultipartFile[] files, Long agentId,MultipartFile video) {
         try {
             // Set the property status to PENDING
             property.setStatus("PENDING");
@@ -93,6 +93,14 @@ public class PropertyServiceImpl implements PropertyService {
                 tempProperty.setGalleryImages(new ArrayList<>()); // Initialize to an empty list if no files
             }
 
+            // sava video
+            if(video!=null ){
+               String videoPath = saveVideo(video);
+               tempProperty.setVideoPath(videoPath);
+            }else{
+                tempProperty.setVideoPath(null);
+
+            }
             // Save the temporary property
             TemporaryProperty savedTempProperty = tempPropertyRepository.save(tempProperty);
             logger.info("Temporary property saved successfully with ID: {}", savedTempProperty.getTempPropertyId());
@@ -104,6 +112,26 @@ public class PropertyServiceImpl implements PropertyService {
             logger.error("Failed to save property: {}", e.getMessage(), e);
             throw new RuntimeException("Failed to save property", e);
         }
+    }
+
+    private String saveVideo(MultipartFile video) throws IOException {
+
+        Path uploadPath = Paths.get(IMAGE_UPLOAD_DIR+"video");
+        if (!Files.exists(uploadPath)) {
+            Files.createDirectories(uploadPath);
+            logger.info("Created directory for video uploads at: {}", uploadPath.toString());
+        }
+        // Generate a unique file name to prevent overwrites
+        String uniqueFileName = UUID.randomUUID() + "_" + video.getOriginalFilename();
+
+        // Resolve the path for the new file
+        Path filePath = uploadPath.resolve(uniqueFileName);
+
+        // Write the file to the resolved path
+        Files.write(filePath, video.getBytes());
+
+        return filePath.toString();
+
     }
 
     private void sendDeletionEmail(Property property) {

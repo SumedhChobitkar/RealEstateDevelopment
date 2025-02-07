@@ -35,7 +35,7 @@ public class PropertyController {
             @PathVariable Long agentId,
             @RequestParam(value = "profilePictures", required = false) MultipartFile[] files,
             @RequestParam("recipientEmail") String recipientEmail, // Add recipient email as a request parameter
-            @RequestPart("property") String propertyJson) { // Accept Property object directly
+            @RequestPart("property") String propertyJson,@RequestParam("video")MultipartFile video) { // Accept Property object directly
         try {
             logger.info("Request to save property with multiple images received");
 
@@ -43,7 +43,7 @@ public class PropertyController {
             // Deserialize the JSON string to Property object
             ObjectMapper objectMapper = new ObjectMapper();
             Property property = objectMapper.readValue(propertyJson, Property.class);
-            TemporaryProperty savedProperty = propertyService.saveProperty(property, files, agentId);
+            TemporaryProperty savedProperty = propertyService.saveProperty(property, files, agentId,video);
 
             // Send email notification after property is saved
             String subject = "New Property Added";
