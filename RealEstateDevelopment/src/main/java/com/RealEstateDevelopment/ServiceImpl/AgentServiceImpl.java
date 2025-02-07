@@ -3,9 +3,13 @@ package com.RealEstateDevelopment.ServiceImpl;
 import com.RealEstateDevelopment.Entity.Agent;
 import com.RealEstateDevelopment.Entity.Role;
 import com.RealEstateDevelopment.Entity.Status;
+import com.RealEstateDevelopment.Entity.TemporaryAgent;
 import com.RealEstateDevelopment.Repository.AgentRepository;
+import com.RealEstateDevelopment.Repository.TemporaryAgentRepository;
 import com.RealEstateDevelopment.Service.AgentService;
 import com.RealEstateDevelopment.CommanUtil.ValidationClass;
+import com.RealEstateDevelopment.Service.EmailService;
+import jakarta.transaction.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,45 +28,112 @@ public class AgentServiceImpl implements AgentService {
     private AgentRepository agentRepository;
 
     @Autowired
+    private TemporaryAgentRepository temporaryAgentRepository;
+
+    @Autowired
+    private EmailService emailService;
+
+    @Autowired
     private BCryptPasswordEncoder passwordEncoder;
 
     private static final Logger logger = LoggerFactory.getLogger(AgentServiceImpl.class);
 
     @Override
-    public Agent registerAgent(Agent agent, MultipartFile profilePicture) throws Exception {
-        try {
-            logger.info("Attempting to register agent with username: {}", agent.getUsername());
+    public TemporaryAgent registerTemporaryAgent(TemporaryAgent agent, MultipartFile profilePicture) throws Exception {
+        logger.info("Registering a new temporary agent: {}", agent.getEmail());
 
-            // Validate agent data
-            validateAgentData(agent);
-
-            if (profilePicture != null && !isValidImageType(profilePicture)) {
-                throw new IllegalArgumentException("Invalid profile picture type. Only PNG, JPG, and JPEG are allowed.");
-            }
-
-            // Encrypt the password before saving
-            agent.setPassword(passwordEncoder.encode(agent.getPassword()));
-
-            agent.setProfilePicture(profilePicture != null ? profilePicture.getBytes() : null);
-            agent.setCreatedAt(Timestamp.from(Instant.now()));
-            agent.setUpdatedAt(Timestamp.from(Instant.now()));
-            agent.setStatus(Status.ACTIVE);
-            agent.setRole(Role.AGENT);
-
-            Agent savedAgent = agentRepository.save(agent);
-            logger.info("Agent registered successfully with ID: {}", savedAgent.getId());
-            return savedAgent;
-        } catch (Exception e) {
-            logger.error("Error registering agent: {}", e.getMessage(), e);
-            throw new Exception("Error registering agent: " + e.getMessage(), e);
+        // Check if email or username already exists in TemporaryAgent or Agent tables
+        if (temporaryAgentRepository.existsByEmail(agent.getEmail()) || agentRepository.existsByEmail(agent.getEmail())) {
+            throw new IllegalArgumentException("An agent with this email already exists.");
         }
+        if (temporaryAgentRepository.existsByUserName(agent.getUserName()) || agentRepository.existsByUserName(agent.getUserName())) {
+            throw new IllegalArgumentException("An agent with this username already exists.");
+        }
+
+        agent.setPassword(passwordEncoder.encode(agent.getPassword()));
+        agent.setCreatedAt(new Timestamp(System.currentTimeMillis()));
+        agent.setApproved(false);
+        agent.setStatus(Status.INACTIVE);
+
+        if (profilePicture != null) {
+            agent.setProfilePicture(profilePicture.getBytes());
+        }
+
+        TemporaryAgent savedAgent = temporaryAgentRepository.save(agent);
+
+        emailService.sendEmail("bhagwatpatil1110@gmail.com", "New Agent Registration",
+                "A new agent " + agent.getFullName() + " has registered and is waiting for approval. \n\nBest regards,\nRealEstate Team");
+
+        return savedAgent;
     }
+
+
+    @Override
+    @Transactional
+    public Agent approveAgent(Long tempAgentId) throws Exception {
+        TemporaryAgent tempAgent = temporaryAgentRepository.findById(tempAgentId)
+                .orElseThrow(() -> new IllegalArgumentException("Temporary agent not found"));
+
+        // Check if an agent with the same email or username already exists
+        if (agentRepository.existsByEmail(tempAgent.getEmail())) {
+            throw new IllegalArgumentException("An agent with this email is already approved.");
+        }
+        if (agentRepository.existsByUserName(tempAgent.getUserName())) {
+            throw new IllegalArgumentException("An agent with this username is already approved.");
+        }
+
+        Agent agent = new Agent();
+        agent.setUserName(tempAgent.getUserName());
+        agent.setFullName(tempAgent.getFullName());
+        agent.setEmail(tempAgent.getEmail());
+        agent.setPassword(tempAgent.getPassword());
+        agent.setMobileNo(tempAgent.getMobileNo());
+        agent.setProfilePicture(tempAgent.getProfilePicture());
+        agent.setExperience(tempAgent.getExperience());
+        agent.setBio(tempAgent.getBio());
+        agent.setCreatedAt(tempAgent.getCreatedAt());
+        agent.setUpdatedAt(new Timestamp(System.currentTimeMillis()));
+        agent.setStatus(Status.ACTIVE);
+        agent.setApproved(true);
+        agent.setRole(Role.AGENT);
+
+        Agent savedAgent = agentRepository.save(agent);
+
+        try {
+            emailService.sendEmail(tempAgent.getEmail(), "Approval Notification",
+                    "Dear " + tempAgent.getFullName() + ",\n\nYour agent profile has been approved.\n\nBest regards,\nRealEstate Team");
+
+            temporaryAgentRepository.delete(tempAgent); // Delete only if email is successfully sent
+        } catch (Exception e) {
+            throw new RuntimeException("Agent approved, but failed to send approval email.", e);
+        }
+
+        return savedAgent;
+    }
+
+
+    @Override
+    public void rejectAgent(Long tempAgentId) throws Exception {
+        TemporaryAgent tempAgent = temporaryAgentRepository.findById(tempAgentId)
+                .orElseThrow(() -> new IllegalArgumentException("Temporary agent not found"));
+
+        temporaryAgentRepository.delete(tempAgent);
+
+        emailService.sendEmail(tempAgent.getEmail(), "Rejection Notification",
+                "Your agent profile has been rejected.");
+    }
+
+    @Override
+    public List<TemporaryAgent> getAllPendingAgents() {
+        return temporaryAgentRepository.findAll();
+    }
+
 
     @Override
     public Agent loginAgent(String username, String password) throws Exception {
         try {
             logger.info("Attempting to login agent with username: {}", username);
-            Optional<Agent> optionalAgent = agentRepository.findByUsername(username);
+            Optional<Agent> optionalAgent = agentRepository.findByUserName(username);
 
             if (optionalAgent.isEmpty()) {
                 logger.warn("Invalid login attempt for username: {}", username);
@@ -101,7 +172,7 @@ public class AgentServiceImpl implements AgentService {
             }
 
             // Update fields
-            existingAgent.setFullname(updatedAgent.getFullname());
+            existingAgent.setFullName(updatedAgent.getFullName());
             existingAgent.setEmail(updatedAgent.getEmail());
             existingAgent.setMobileNo(updatedAgent.getMobileNo());
             existingAgent.setBio(updatedAgent.getBio());
@@ -206,7 +277,7 @@ public class AgentServiceImpl implements AgentService {
 
     // Validation method for agent data
     private void validateAgentData(Agent agent) {
-        if (agent.getUsername() == null || !ValidationClass.USERNAME_PATTERN.matcher(agent.getUsername()).matches()) {
+        if (agent.getUserName() == null || !ValidationClass.USERNAME_PATTERN.matcher(agent.getUserName()).matches()) {
             throw new IllegalArgumentException("Username is required.");
         }
         if (agent.getEmail() == null || !ValidationClass.EMAIL_PATTERN.matcher(agent.getEmail()).matches()) {

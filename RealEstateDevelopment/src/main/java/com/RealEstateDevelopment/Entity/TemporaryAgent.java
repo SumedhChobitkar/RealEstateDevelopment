@@ -10,35 +10,29 @@ import java.sql.Timestamp;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "agents")
-public class Agent {
+@Table(name = "temporary_agents")
+public class TemporaryAgent {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
+    
     private String userName;
     private String fullName;
     private String email;
     private String password;
     private String mobileNo;
-
-    @Enumerated(EnumType.STRING)
-    private Role role;
-
-    @Lob
-    @Column(name = "profile_picture", columnDefinition = "LONGBLOB")
-    @Basic(fetch = FetchType.LAZY)
-    private byte[] profilePicture;
-
     private double experience;
     private double rating;
     private String bio;
 
-    private Timestamp createdAt;
-    private Timestamp updatedAt;
+    @Lob
+    @Column(name = "profile_picture", columnDefinition = "LONGBLOB")
+    private byte[] profilePicture;
 
     @Enumerated(EnumType.STRING)
     private Status status;
 
-    private boolean isApproved = true; // Approval status from admin
+    private Timestamp createdAt;
+    private Timestamp updatedAt;
+    private boolean isApproved = false;
 }

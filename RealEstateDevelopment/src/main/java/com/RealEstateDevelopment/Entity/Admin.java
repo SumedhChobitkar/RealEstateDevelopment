@@ -1,21 +1,16 @@
 package com.RealEstateDevelopment.Entity;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
-
 import java.sql.Timestamp;
 import java.time.Instant;
-import java.util.List;
 
 @Entity
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@JsonIgnoreProperties({"agent", "admin", "properties", "temporaryProperties"})
 public class Admin {
 
     @Id
@@ -63,19 +58,4 @@ public class Admin {
         this.updatedAt = Timestamp.from(Instant.now());
     }
 
-//    @OneToMany(mappedBy = "admin") // One admin can manage many properties
-//    @JsonIgnore
-//    private List<TemporaryProperty> temporaryProperties;
-//
-//    @OneToMany(mappedBy = "admin")
-//    @JsonIgnore
-//    private List<Property> properties;
-
-//    @OneToMany(mappedBy = "admin")
-//    @JsonIgnore // Prevent serialization of properties field in Admin
-//    private List<TemporaryProperty> temporaryProperties;
-//
-//    @OneToMany(mappedBy = "admin")
-//    @JsonIgnore // Prevent serialization of properties field in Admin
-//    private List<Property> properties;
 }
