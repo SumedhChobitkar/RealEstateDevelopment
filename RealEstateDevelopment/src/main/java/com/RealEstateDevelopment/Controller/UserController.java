@@ -147,19 +147,6 @@ public class UserController {
         }
     }
 
-//    @DeleteMapping("/deleteUser/{userId}")
-//    public ResponseEntity<?> deleteUser(@PathVariable Long userId) {
-//        try {
-//            logger.info("Attempting to delete user with ID: {}", userId);
-//            userService.deleteUser(userId);
-//            logger.info("User with ID: {} deleted successfully.", userId);
-//            return ResponseEntity.ok("User deleted successfully");
-//        } catch (Exception e) {
-//            logger.error("Error during user deletion for ID {}: {}", userId, e.getMessage(), e);
-//            return ResponseEntity.badRequest().body("Error during user deletion: " + e.getMessage());
-//        }
-//    }
-
     @DeleteMapping("/deleteUser/{userId}")
     public ResponseEntity<Map<String, Object>> deleteUser(@PathVariable Long userId) {
         Map<String, Object> response = new HashMap<>();
@@ -265,10 +252,10 @@ public class UserController {
         }
     }
 
-    private  boolean isValidImageType(String contentType) {
-        return contentType.equalsIgnoreCase(".jpeg") ||
-                contentType.equalsIgnoreCase(".png") ||
-                contentType.equalsIgnoreCase(".jpg");
+
+        private boolean isValidImageType(String contentType) {
+        return contentType.equalsIgnoreCase("image/jpeg")
+                || contentType.equalsIgnoreCase("image/png");
     }
 
 }

@@ -6,5 +6,9 @@ public enum Status {
     BLOCKED,
     PENDING,
     APPROVED,
-    REJECTED
+    REJECTED,
+    AVAILABLE,
+    OCCUPIED,
+    SOLD,
+    RENTED
 }
