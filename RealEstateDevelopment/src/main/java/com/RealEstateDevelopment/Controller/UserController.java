@@ -1,14 +1,22 @@
 package com.RealEstateDevelopment.Controller;
 
 import com.RealEstateDevelopment.Entity.User;
+import com.RealEstateDevelopment.Exception.UserNotFoundException;
+import com.RealEstateDevelopment.Repository.ForgotPasswordOtpRepository;
+import com.RealEstateDevelopment.Service.EmailService;
 import com.RealEstateDevelopment.Service.UserService;
+import com.RealEstateDevelopment.ServiceImpl.ForgotPasswordService;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -23,23 +31,67 @@ UserController {
     @Autowired
     private UserService userService;
 
-    @PostMapping("/registerUser")
-    public ResponseEntity<?> registerUser(
-            @RequestPart("user") String userJson,
-            @RequestPart(value = "profilePicture", required = false) MultipartFile profilePicture) {
-        try {
-            logger.info("Starting user registration process...");
-            // Parse the JSON String into a User object
-            ObjectMapper objectMapper = new ObjectMapper();
-            User user = objectMapper.readValue(userJson, User.class);
-            logger.info("Parsed user object from request.");
+    @Autowired
+    private EmailService emailService;
 
-            User registeredUser = userService.registerUser(user, profilePicture);
-            logger.info("User registered successfully with ID: {}", registeredUser.getId());
-            return ResponseEntity.ok(registeredUser);
+    @Autowired
+    private ForgotPasswordOtpRepository otpRepository;
+
+    @Autowired
+    private ForgotPasswordService forgotPasswordService;
+
+//    @PostMapping("/registerTemporaryUser")
+//    public ResponseEntity<String> registerTemporaryUser(@RequestPart("userData") String userData,
+//                                               @RequestPart("profilePicture") MultipartFile multipartFile) throws JsonProcessingException {
+//        ObjectMapper objectMapper = new ObjectMapper();
+//        User user = objectMapper.readValue(userData, User.class);
+//        try {
+//            if (multipartFile != null && !multipartFile.isEmpty()) {
+//                String contentType = multipartFile.getContentType();
+//                if (contentType == null || isValidImageType(contentType)) {
+//                    return ResponseEntity.badRequest().body("Invalid profile picture format. Only JPEG and PNG and png are supported.");
+//                }
+//                user.setProfilePicture(multipartFile.getBytes());
+//            } else {
+//                user.setProfilePicture(null);
+//            }
+//            String message = userService.registerTemporaryUser(user);
+//            return ResponseEntity.ok(message);
+//        } catch (IllegalArgumentException e) {
+//            return ResponseEntity.badRequest().body(e.getMessage());
+//        } catch (Exception e) {
+//            return ResponseEntity.status(500).body("An unexpected error occurred: " + e.getMessage());
+//        }
+//    }
+
+    @PostMapping("/registerTemporaryUser")
+    public ResponseEntity<Map<String, String>> registerTemporaryUser(@RequestPart("userData") String userData,
+                                                                     @RequestPart("profilePicture") MultipartFile multipartFile) throws JsonProcessingException {
+        ObjectMapper objectMapper = new ObjectMapper();
+        Map<String, Object> userDataMap = objectMapper.readValue(userData, Map.class);
+        User user = objectMapper.readValue(userData, User.class);
+        try {    if (multipartFile != null && !multipartFile.isEmpty())
+        {      String contentType = multipartFile.getContentType();
+            if (contentType == null || !isValidImageType(contentType))
+            {
+                return ResponseEntity.badRequest().body(Map.of("message", "Invalid profile picture format. Only JPEG and PNG are supported."));
+            }      user.setProfilePicture(multipartFile.getBytes());    } else {      user.setProfilePicture(null);    }
+            String message = userService.registerTemporaryUser(user);
+            return ResponseEntity.ok(Map.of("message", message));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
         } catch (Exception e) {
-            logger.error("Error during user registration: {}", e.getMessage(), e);
-            return ResponseEntity.badRequest().body("Error during registration: " + e.getMessage());
+            return ResponseEntity.status(500).body(Map.of("message", "An unexpected error occurred: " + e.getMessage()));
+        }}
+    @PostMapping("/verifyOtpToRegisterUser")
+    public ResponseEntity<String> verifyUserOtpToRegisterUser(@RequestParam String email, @RequestParam String otp) {
+        try {
+            String message = userService.verifyOtpToRegister(email, otp);
+            return ResponseEntity.ok(message);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("An unexpected error occurred: " + e.getMessage());
         }
     }
 
@@ -64,50 +116,77 @@ UserController {
         }
     }
 
-    @PutMapping("/updateUser/{userId}")
-    public ResponseEntity<?> updateUser(
-            @PathVariable Long userId,
-            @RequestPart("user") String updatedUserJson,
-            @RequestPart(value = "profilePicture", required = false) MultipartFile profilePicture) {
+    @PutMapping("/update/{userId}")
+    public ResponseEntity<User> updateUser(@PathVariable Long userId,
+                                           @RequestPart("userData") String userData,
+                                           @RequestPart(value = "profilePicture", required = false) MultipartFile multipartFile) {
         try {
-            logger.info("Starting user update process for ID: {}", userId);
-            // Parse the JSON string into a User object
             ObjectMapper objectMapper = new ObjectMapper();
-            User updatedUser = objectMapper.readValue(updatedUserJson, User.class);
-            logger.info("Parsed updated user object from request.");
+            User user = objectMapper.readValue(userData, User.class);
+            // If a profile picture is provided, validate and set it
+            if (multipartFile != null && !multipartFile.isEmpty()) {
+                String contentType = multipartFile.getContentType();
+                if (contentType == null || isValidImageType(contentType)) {
+                    return ResponseEntity.badRequest().body(null);
+                }
+                user.setProfilePicture(multipartFile.getBytes());
+            } else {
+                User existingUser = userService.getUserById(userId);
+                // If no new profile picture is provided, keep the existing one
+                user.setProfilePicture(existingUser.getProfilePicture());
+            }
+            // Update user details
+            User updatedUser = userService.updateUserDetails(userId, user);
+            return ResponseEntity.ok(updatedUser);
 
-            User user = userService.updateUser(userId, updatedUser, profilePicture);
-            logger.info("User updated successfully with ID: {}", user.getId());
-            return ResponseEntity.ok(user);
+        } catch (JsonProcessingException e) {
+            logger.error("Failed to parse user data: {}", e.getMessage());
+            return ResponseEntity.badRequest().body(null);
         } catch (Exception e) {
-            logger.error("Error during user update for ID {}: {}", userId, e.getMessage(), e);
-            return ResponseEntity.badRequest().body("Error during user update: " + e.getMessage());
+            logger.error("An error occurred while updating user with ID: {}", userId, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
     }
 
     @DeleteMapping("/deleteUser/{userId}")
-    public ResponseEntity<?> deleteUser(@PathVariable Long userId) {
+    public ResponseEntity<Map<String, Object>> deleteUser(@PathVariable Long userId) {
+        Map<String, Object> response = new HashMap<>();
         try {
             logger.info("Attempting to delete user with ID: {}", userId);
             userService.deleteUser(userId);
             logger.info("User with ID: {} deleted successfully.", userId);
-            return ResponseEntity.ok("User deleted successfully");
+
+            response.put("status", 200);
+            response.put("message", "User deleted successfully");
+            return ResponseEntity.ok(response);
         } catch (Exception e) {
             logger.error("Error during user deletion for ID {}: {}", userId, e.getMessage(), e);
-            return ResponseEntity.badRequest().body("Error during user deletion: " + e.getMessage());
+
+            response.put("status", 400);
+            response.put("message", "Error during user deletion: " + e.getMessage());
+            return ResponseEntity.badRequest().body(response);
         }
     }
 
     @GetMapping("/getUserById/{userId}")
     public ResponseEntity<?> getUserById(@PathVariable Long userId) {
         try {
-            logger.info("Fetching user with ID: {}", userId);
+            if (userId == null) {
+                logger.warn("User ID cannot be null");
+                return ResponseEntity.badRequest().body("User ID cannot be null");
+            }
+            // Retrieve the user
             User user = userService.getUserById(userId);
-            logger.info("User retrieved successfully with ID: {}", userId);
+            // Return the retrieved user
             return ResponseEntity.ok(user);
+
+        } catch (UserNotFoundException e) {
+            logger.warn("User not found with ID: {}", userId);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found with ID: " + userId);
         } catch (Exception e) {
-            logger.error("Error fetching user with ID {}: {}", userId, e.getMessage(), e);
-            return ResponseEntity.badRequest().body("Error fetching user: " + e.getMessage());
+            logger.error("An unexpected error occurred while retrieving user with ID: {}", userId, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("An unexpected error occurred: " + e.getMessage());
         }
     }
 
@@ -128,10 +207,11 @@ UserController {
     @PutMapping("/changePassword/{userId}")
     public ResponseEntity<?> changePassword(@PathVariable Long userId,
                                             @RequestParam String oldPassword,
-                                            @RequestParam String newPassword) {
+                                            @RequestParam String newPassword,
+                                            @RequestParam String confirmPassword) {
         try {
             logger.info("Changing password for user ID: {}", userId);
-            userService.changePassword(userId, oldPassword, newPassword);
+            userService.changePassword(userId, oldPassword, newPassword, confirmPassword);
             logger.info("Password updated successfully for user ID: {}", userId);
             return ResponseEntity.ok("Password updated successfully");
         } catch (Exception e) {
@@ -139,6 +219,7 @@ UserController {
             return ResponseEntity.badRequest().body("Error changing password: " + e.getMessage());
         }
     }
+
 
     @PostMapping("/logoutUser")
     public ResponseEntity<?> logoutUser(@RequestParam String username) {
@@ -152,4 +233,30 @@ UserController {
             return ResponseEntity.badRequest().body("Error during logout: " + e.getMessage());
         }
     }
+
+    @DeleteMapping("/user/profilePicture/delete/{userId}")
+    public ResponseEntity<String> deleteProfilePicture(@PathVariable Long userId) {
+        try {
+            logger.info("Received request to delete profile picture for user ID: {}", userId);
+            // Call the service method to delete the profile picture
+            String message = userService.deleteProfilePicture(userId);
+            // Return a success response
+            return ResponseEntity.ok(message);
+
+        } catch (UserNotFoundException e) {
+            logger.warn("Profile picture deletion failed: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (Exception e) {
+            logger.error("An unexpected error occurred: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("An unexpected error occurred: " + e.getMessage());
+        }
+    }
+
+
+        private boolean isValidImageType(String contentType) {
+        return contentType.equalsIgnoreCase("image/jpeg")
+                || contentType.equalsIgnoreCase("image/png");
+    }
+
 }

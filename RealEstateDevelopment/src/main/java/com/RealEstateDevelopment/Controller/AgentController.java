@@ -1,6 +1,7 @@
 package com.RealEstateDevelopment.Controller;
 
 import com.RealEstateDevelopment.Entity.Agent;
+import com.RealEstateDevelopment.Entity.TemporaryAgent;
 import com.RealEstateDevelopment.Service.AgentService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
@@ -9,6 +10,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -22,23 +25,66 @@ public class AgentController {
 
     private static final Logger logger = LoggerFactory.getLogger(AgentController.class);
 
-    @PostMapping("/registerAgent")
-    public ResponseEntity<?> registerAgent(
+
+    @PostMapping("/registerTemporaryAgent")
+    public ResponseEntity<?> registerTemporaryAgent(
             @RequestPart("agent") String agentJson,
             @RequestPart(value = "profilePicture", required = false) MultipartFile profilePicture) {
         try {
-            logger.info("Attempting to register a new agent.");
+            logger.info("Registering a new temporary agent.");
             ObjectMapper objectMapper = new ObjectMapper();
-            Agent agent = objectMapper.readValue(agentJson, Agent.class);
+            TemporaryAgent agent = objectMapper.readValue(agentJson, TemporaryAgent.class);
 
-            Agent registeredAgent = agentService.registerAgent(agent, profilePicture);
-            logger.info("Agent registered successfully with ID: {}", registeredAgent.getId());
+            TemporaryAgent registeredAgent = agentService.registerTemporaryAgent(agent, profilePicture);
+            logger.info("Temporary agent registered successfully with ID: {}", registeredAgent.getId());
             return ResponseEntity.ok(registeredAgent);
         } catch (Exception e) {
             logger.error("Error during agent registration: {}", e.getMessage(), e);
             return ResponseEntity.badRequest().body("Error during agent registration: " + e.getMessage());
         }
     }
+
+    /**
+     * Approve an agent by admin.
+     */
+    @PostMapping("/approveAgent/{tempAgentId}")
+    public ResponseEntity<?> approveAgent(@PathVariable Long tempAgentId) {
+        try {
+            logger.info("Approving agent with temporary ID: {}", tempAgentId);
+            Agent approvedAgent = agentService.approveAgent(tempAgentId);
+            logger.info("Agent approved successfully with ID: {}", approvedAgent.getId());
+            return ResponseEntity.ok(approvedAgent);
+        } catch (Exception e) {
+            logger.error("Error approving agent: {}", e.getMessage(), e);
+            return ResponseEntity.badRequest().body("Error approving agent: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Reject an agent by admin.
+     */
+    @DeleteMapping("/rejectAgent/{tempAgentId}")
+    public ResponseEntity<?> rejectAgent(@PathVariable Long tempAgentId) {
+        try {
+            logger.info("Rejecting agent with temporary ID: {}", tempAgentId);
+            agentService.rejectAgent(tempAgentId);
+            logger.info("Agent rejected successfully.");
+            return ResponseEntity.ok("Agent rejected successfully.");
+        } catch (Exception e) {
+            logger.error("Error rejecting agent: {}", e.getMessage(), e);
+            return ResponseEntity.badRequest().body("Error rejecting agent: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Get all pending agent approvals.
+     */
+    @GetMapping("/getAllPendingAgents")
+    public ResponseEntity<List<TemporaryAgent>> getPendingAgents() {
+        logger.info("Fetching all pending agents.");
+        return ResponseEntity.ok(agentService.getAllPendingAgents());
+    }
+
 
     @PostMapping("/loginAgent")
     public ResponseEntity<?> loginAgent(@RequestBody Map<String, String> loginDetails) {
@@ -129,4 +175,120 @@ public class AgentController {
             return ResponseEntity.badRequest().body("Error changing password: " + e.getMessage());
         }
     }
+
+    // Here are your updated methods using ResponseEntity<Map<String, String>>:
+
+//    @PostMapping("/registerTemporaryAgent")
+//    public ResponseEntity<Map<String, String>> registerTemporaryAgent(
+//            @RequestPart("agent") String agentJson,
+//            @RequestPart(value = "profilePicture", required = false) MultipartFile profilePicture) {
+//
+//        Map<String, String> response = new HashMap<>();
+//
+//        try {
+//            logger.info("Registering a new temporary agent.");
+//            ObjectMapper objectMapper = new ObjectMapper();
+//            TemporaryAgent agent = objectMapper.readValue(agentJson, TemporaryAgent.class);
+//
+//            TemporaryAgent registeredAgent = agentService.registerTemporaryAgent(agent, profilePicture);
+//            logger.info("Temporary agent registered successfully with ID: {}", registeredAgent.getId());
+//
+//            response.put("message", "Temporary agent registered successfully.");
+//            response.put("agentId", String.valueOf(registeredAgent.getId()));
+//            return ResponseEntity.ok(response);
+//
+//        } catch (Exception e) {
+//            logger.error("Error during agent registration: {}", e.getMessage(), e);
+//            response.put("message", "Error during agent registration: " + e.getMessage());
+//            return ResponseEntity.badRequest().body(response);
+//        }
+//    }
+//
+//    /**
+//     * Approve an agent by admin.
+//     */
+//    @PostMapping("/approveAgent/{tempAgentId}")
+//    public ResponseEntity<Map<String, String>> approveAgent(@PathVariable Long tempAgentId) {
+//        Map<String, String> response = new HashMap<>();
+//
+//        try {
+//            logger.info("Approving agent with temporary ID: {}", tempAgentId);
+//            Agent approvedAgent = agentService.approveAgent(tempAgentId);
+//            logger.info("Agent approved successfully with ID: {}", approvedAgent.getId());
+//
+//            response.put("message", "Agent approved successfully.");
+//            response.put("agentId", String.valueOf(approvedAgent.getId()));
+//            return ResponseEntity.ok(response);
+//
+//        } catch (Exception e) {
+//            logger.error("Error approving agent: {}", e.getMessage(), e);
+//            response.put("message", "Error approving agent: " + e.getMessage());
+//            return ResponseEntity.badRequest().body(response);
+//        }
+//    }
+//
+//    /**
+//     * Reject an agent by admin.
+//     */
+//    @DeleteMapping("/rejectAgent/{tempAgentId}")
+//    public ResponseEntity<Map<String, String>> rejectAgent(@PathVariable Long tempAgentId) {
+//        Map<String, String> response = new HashMap<>();
+//
+//        try {
+//            logger.info("Rejecting agent with temporary ID: {}", tempAgentId);
+//            agentService.rejectAgent(tempAgentId);
+//            logger.info("Agent rejected successfully.");
+//
+//            response.put("message", "Agent rejected successfully.");
+//            return ResponseEntity.ok(response);
+//
+//        } catch (Exception e) {
+//            logger.error("Error rejecting agent: {}", e.getMessage(), e);
+//            response.put("message", "Error rejecting agent: " + e.getMessage());
+//            return ResponseEntity.badRequest().body(response);
+//        }
+//    }
+//
+//    @PostMapping("/loginAgent")
+//    public ResponseEntity<Map<String, String>> loginAgent(@RequestBody Map<String, String> loginDetails) {
+//        Map<String, String> response = new HashMap<>();
+//
+//        try {
+//            logger.info("Attempting to login agent with username: {}", loginDetails.get("username"));
+//            String username = loginDetails.get("username");
+//            String password = loginDetails.get("password");
+//
+//            Agent agent = agentService.loginAgent(username, password);
+//            logger.info("Agent {} logged in successfully.", username);
+//
+//            response.put("message", "Login successful.");
+//            response.put("agentId", String.valueOf(agent.getId()));
+//            return ResponseEntity.ok(response);
+//
+//        } catch (Exception e) {
+//            logger.error("Error during agent login: {}", e.getMessage(), e);
+//            response.put("message", "Error during agent login: " + e.getMessage());
+//            return ResponseEntity.badRequest().body(response);
+//        }
+//    }
+//
+//    @DeleteMapping("/deleteAgent/{agentId}")
+//    public ResponseEntity<Map<String, String>> deleteAgent(@PathVariable Long agentId) {
+//        Map<String, String> response = new HashMap<>();
+//
+//        try {
+//            logger.info("Attempting to delete agent with ID: {}", agentId);
+//            agentService.deleteAgent(agentId);
+//            logger.info("Agent with ID: {} deleted successfully.", agentId);
+//
+//            response.put("message", "Agent deleted successfully.");
+//            return ResponseEntity.ok(response);
+//
+//        } catch (Exception e) {
+//            logger.error("Error deleting agent with ID: {}: {}", agentId, e.getMessage(), e);
+//            response.put("message", "Error deleting agent: " + e.getMessage());
+//            return ResponseEntity.badRequest().body(response);
+//        }
+//    }
+
 }

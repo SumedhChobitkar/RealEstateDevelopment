@@ -1,11 +1,12 @@
 package com.RealEstateDevelopment.ServiceImpl;
 
 import com.RealEstateDevelopment.CommanUtil.ValidationClass;
-import com.RealEstateDevelopment.Entity.Admin;
-import com.RealEstateDevelopment.Entity.Role;
-import com.RealEstateDevelopment.Entity.Status;
+import com.RealEstateDevelopment.Entity.*;
+import com.RealEstateDevelopment.Exception.AgentNotFoundException;
 import com.RealEstateDevelopment.Exception.UserNotFoundException;
 import com.RealEstateDevelopment.Repository.AdminRepository;
+import com.RealEstateDevelopment.Repository.AgentRepository;
+import com.RealEstateDevelopment.Repository.PropertyNewRepository;
 import com.RealEstateDevelopment.Service.AdminService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,7 +14,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -24,6 +28,12 @@ public class AdminServiceImpl implements AdminService {
 
     @Autowired
     private AdminRepository adminRepository;
+
+    @Autowired
+    private PropertyNewRepository propertyRepository;
+
+    @Autowired
+    private AgentRepository agentRepository;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -141,6 +151,60 @@ public class AdminServiceImpl implements AdminService {
         adminRepository.save(existingAdmin);
         logger.info("Successfully updated admin with ID: {}", adminId);
         return "Admin updated successfully.";
+    }
+
+
+    @Override
+    @jakarta.transaction.Transactional
+    public PropertyNew updateAgentAndProperty(Long propertyId, PropertyNew updatedProperty, List<MultipartFile> newImages) {
+        try {
+            logger.info("Updating property with ID: {}", propertyId);
+
+            // Fetch the existing property from the database
+            PropertyNew existingProperty = propertyRepository.findById(propertyId)
+                    .orElseThrow(() -> new IllegalArgumentException("The Property you are trying to update not found"));
+
+            // Fetch agent only if it's updated
+            if (updatedProperty.getAgent() != null && updatedProperty.getAgent().getId() != null) {
+                Agent existingAgent = agentRepository.findById(updatedProperty.getAgent().getId())
+                        .orElseThrow(() -> new AgentNotFoundException("Agent not found with ID: " + updatedProperty.getAgent().getId()));
+                existingProperty.setAgent(existingAgent); // ✅ Assign a managed agent
+            }
+
+            // Update other fields
+            if (updatedProperty.getTitle() != null) existingProperty.setTitle(updatedProperty.getTitle());
+            if (updatedProperty.getPrice() != null) existingProperty.setPrice(updatedProperty.getPrice());
+            if (updatedProperty.getSize() != null) existingProperty.setSize(updatedProperty.getSize());
+            if (updatedProperty.getAddress() != null) existingProperty.setAddress(updatedProperty.getAddress());
+            if (updatedProperty.getYearBuilt() != null) existingProperty.setYearBuilt(updatedProperty.getYearBuilt());
+            if (updatedProperty.getPropertyType() != null) existingProperty.setPropertyType(updatedProperty.getPropertyType());
+            if (updatedProperty.getBedrooms() != null) existingProperty.setBedrooms(updatedProperty.getBedrooms());
+            if (updatedProperty.getBathrooms() != null) existingProperty.setBathrooms(updatedProperty.getBathrooms());
+            if (updatedProperty.getAmenities() != null) existingProperty.setAmenities(updatedProperty.getAmenities());
+            if (updatedProperty.getFeatures() != null) existingProperty.setFeatures(updatedProperty.getFeatures());
+            if (updatedProperty.getProximity() != null) existingProperty.setProximity(updatedProperty.getProximity());
+
+            // If there are new images, update the gallery images list
+            if (newImages != null && !newImages.isEmpty()) {
+                List<byte[]> updatedImageList = new ArrayList<>();
+                for (MultipartFile image : newImages) {
+                    updatedImageList.add(image.getBytes());
+                }
+                existingProperty.setGalleryImages(updatedImageList);
+            }
+
+            // Update timestamps
+            existingProperty.setUpdatedAt(new Timestamp(System.currentTimeMillis()));
+
+            // Save the updated property
+            PropertyNew savedProperty = propertyRepository.save(existingProperty);
+
+            logger.info("Property updated successfully. Property ID: {}", savedProperty.getPropertyId());
+            return savedProperty;
+        } catch (Exception e) {
+            logger.error("Error updating property with ID: {}", propertyId, e);
+            throw new RuntimeException("Error updating property", e);
+        }
     }
 
     private void validateUserData(Admin admin) {

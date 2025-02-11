@@ -4,7 +4,6 @@ import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
-
 import java.sql.Timestamp;
 import java.time.Instant;
 
@@ -58,4 +57,5 @@ public class Admin {
     protected void onUpdate() {
         this.updatedAt = Timestamp.from(Instant.now());
     }
+
 }
