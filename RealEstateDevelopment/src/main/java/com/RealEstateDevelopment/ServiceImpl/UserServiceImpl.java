@@ -6,19 +6,19 @@ import com.RealEstateDevelopment.Exception.UserNotFoundException;
 import com.RealEstateDevelopment.Repository.ForgotPasswordOtpRepository;
 import com.RealEstateDevelopment.Repository.TemporaryUserRepository;
 import com.RealEstateDevelopment.Repository.UserRepository;
+import com.RealEstateDevelopment.Security.JwtUtil;
 import com.RealEstateDevelopment.Service.EmailService;
 import com.RealEstateDevelopment.Service.UserService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
-import java.util.Random;
+import java.util.*;
 
 @Service
 public class UserServiceImpl implements UserService {
@@ -37,6 +37,9 @@ public class UserServiceImpl implements UserService {
 
     @Autowired
     private BCryptPasswordEncoder passwordEncoder;
+
+    @Autowired
+    private JwtUtil jwtUtil;
 
     private static final int OTP_EXPIRY_MINUTES = 5;
 
@@ -125,33 +128,36 @@ public class UserServiceImpl implements UserService {
         }
     }
 
-
     @Override
-    public User loginUser(String username, String password) throws Exception {
+    public Map<String, Object> loginUser(String username, String password) throws Exception {
         try {
             logger.info("Attempting to login user with username: {}", username);
 
-            // Fetch user from the database
-            Optional<User> userOpt = userRepository.findByUsername(username);
-            if (userOpt.isPresent()) {
-                User user = userOpt.get();
+            User user = userRepository.findByUsername(username)
+                    .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
-                // Verify the password using PasswordEncoder
-                if (passwordEncoder.matches(password, user.getPassword())) {
-                    logger.info("User with username: {} logged in successfully.", username);
-                    return user;
-                }
+            if (!passwordEncoder.matches(password, user.getPassword())) {
+                logger.warn("Invalid password for username: {}", username);
+                throw new IllegalArgumentException("Invalid username or password.");
             }
 
-            // Log invalid login attempt
-            logger.warn("Invalid login attempt for username: {}", username);
-            throw new Exception("Invalid username or password");
+            // Generate JWT token
+            String token = jwtUtil.generateToken(user.getUsername(), user.getRole().name());
 
+            // Prepare response with user details (excluding sensitive fields)
+            Map<String, Object> response = new HashMap<>();
+            response.put("token", token);
+            response.put("username", user.getUsername());
+            response.put("role", user.getRole());
+
+            return response;
         } catch (Exception e) {
             logger.error("Error during user login: {}", e.getMessage(), e);
             throw new Exception("Error during user login: " + e.getMessage(), e);
         }
     }
+
+
 
     @Override
     @Transactional

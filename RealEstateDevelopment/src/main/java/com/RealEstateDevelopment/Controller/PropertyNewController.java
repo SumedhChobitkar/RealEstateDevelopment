@@ -3,22 +3,26 @@ package com.RealEstateDevelopment.Controller;
 import com.RealEstateDevelopment.Entity.PendingProperty;
 import com.RealEstateDevelopment.Entity.PropertyNew;
 import com.RealEstateDevelopment.Exceptions.PropertyNotFoundException;
+import com.RealEstateDevelopment.Security.JwtUtil;
 import com.RealEstateDevelopment.Service.PropertyNewService;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 @RestController
 @RequestMapping("/api/properties")
+@CrossOrigin("*")
 public class PropertyNewController {
 
     private static final Logger logger = LoggerFactory.getLogger(PropertyNewController.class);
@@ -26,30 +30,88 @@ public class PropertyNewController {
     @Autowired
     private PropertyNewService propertyNewService;
 
+    @Autowired
+    private JwtUtil jwtUtil;
 
     // Add Property
+
+    @PreAuthorize("hasRole('AGENT')")
     @PostMapping("/addProperty/{agentId}")
-    public ResponseEntity<?> addProperty(
+    public ResponseEntity<Map<String, Object>> addProperty(
             @PathVariable Long agentId,
             @RequestPart("property") String propertyJson,
-            @RequestPart(value = "images", required = false) List<MultipartFile> images) {
+            @RequestPart(value = "images", required = false) List<MultipartFile> images,
+            @RequestHeader("Authorization") String authorizationHeader) {
+
+        Map<String, Object> response = new HashMap<>();
+
         try {
+
+            // Extract token from the Authorization header
+            if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
+                throw new SecurityException("Missing or invalid Authorization header");
+            }
+            String token = authorizationHeader.substring(7); // Remove "Bearer "
+
+            // Validate token
+            boolean isValidToken = jwtUtil.validateToken(token);
+            if (!isValidToken) {
+                throw new SecurityException("Invalid or expired token");
+            }
+
+            // Convert JSON string to PendingProperty object
             ObjectMapper objectMapper = new ObjectMapper();
             PendingProperty pendingProperty = objectMapper.readValue(propertyJson, PendingProperty.class);
+
+            // Save the property
             PendingProperty savedProperty = propertyNewService.addProperty(agentId, pendingProperty, images);
-            return ResponseEntity.ok(savedProperty);
+
+            // Prepare successful response
+            response.put("status", "success");
+            response.put("message", "Property added successfully.");
+            response.put("property", savedProperty);
+
+            return ResponseEntity.ok(response);
+        } catch (JsonProcessingException e) {
+            logger.error("Invalid JSON format for property: {}", e.getMessage(), e);
+            response.put("status", "error");
+            response.put("message", "Invalid JSON format for property.");
+            return ResponseEntity.badRequest().body(response);
+        } catch (IOException e) {
+            logger.error("Error processing property images: {}", e.getMessage(), e);
+            response.put("status", "error");
+            response.put("message", "Error processing property images.");
+            return ResponseEntity.badRequest().body(response);
         } catch (Exception e) {
-            logger.error("Error adding property: {}", e.getMessage(), e);
-            return ResponseEntity.badRequest().body("Error adding property: " + e.getMessage());
+            logger.error("Unexpected error adding property: {}", e.getMessage(), e);
+            response.put("status", "error");
+            response.put("message", "An unexpected error occurred while adding the property.");
+            return ResponseEntity.internalServerError().body(response);
         }
     }
 
+
     // Approve Property
+    @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/approveProperty/{propertyId}")
-    public ResponseEntity<Map<String, String>> approveProperty(@PathVariable Long propertyId) {
+    public ResponseEntity<Map<String, String>> approveProperty(@PathVariable Long propertyId,
+                                                               @RequestHeader("Authorization") String authorizationHeader) {
         Map<String, String> response = new HashMap<>();
 
         try {
+
+            // Extract token from the Authorization header
+            if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
+                throw new SecurityException("Missing or invalid Authorization header");
+            }
+            String token = authorizationHeader.substring(7); // Remove "Bearer "
+
+            // Validate token
+            boolean isValidToken = jwtUtil.validateToken(token);
+            if (!isValidToken) {
+                throw new SecurityException("Invalid or expired token");
+            }
+
             propertyNewService.approveProperty(propertyId);
             response.put("message", "Property approved successfully");
             return ResponseEntity.ok(response);
@@ -65,11 +127,26 @@ public class PropertyNewController {
     }
 
     // Reject Property
+    @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/rejectProperty/{propertyId}")
-    public ResponseEntity<Map<String, String>> rejectProperty(@PathVariable Long propertyId) {
+    public ResponseEntity<Map<String, String>> rejectProperty(@PathVariable Long propertyId,
+                                                              @RequestHeader("Authorization") String authorizationHeader) {
         Map<String, String> response = new HashMap<>();
 
         try {
+
+            // Extract token from the Authorization header
+            if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
+                throw new SecurityException("Missing or invalid Authorization header");
+            }
+            String token = authorizationHeader.substring(7); // Remove "Bearer "
+
+            // Validate token
+            boolean isValidToken = jwtUtil.validateToken(token);
+            if (!isValidToken) {
+                throw new SecurityException("Invalid or expired token");
+            }
+
             logger.info("Rejecting and deleting property with ID: {}", propertyId);
             propertyNewService.rejectProperty(propertyId);
             logger.info("Property with ID {} rejected and deleted successfully", propertyId);
@@ -88,40 +165,25 @@ public class PropertyNewController {
     }
 
 
-//    // Approve Property
-//    @PutMapping("/approveProperty/{propertyId}")
-//    public ResponseEntity<?> approveProperty(@PathVariable Long propertyId) {
-//        try {
-//            PropertyNew approvedProperty = propertyNewService.approveProperty(propertyId);
-//            return ResponseEntity.ok(approvedProperty);
-//        } catch (Exception e) {
-//            logger.error("Error approving property: {}", e.getMessage(), e);
-//            return ResponseEntity.badRequest().body("Error approving property: " + e.getMessage());
-//        }
-//    }
-//
-//    @DeleteMapping("/rejectProperty/{propertyId}")
-//    public ResponseEntity<?> rejectProperty(@PathVariable Long propertyId) {
-//        try {
-//            logger.info("Rejecting and deleting property with ID: {}", propertyId);
-//            propertyNewService.rejectProperty(propertyId);
-//            logger.info("Property with ID {} rejected and deleted successfully", propertyId);
-//            return ResponseEntity.ok("Property rejected and deleted successfully");
-//        } catch (PropertyNotFoundException e) {
-//            logger.error("Property not found with ID: {}", propertyId);
-//            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
-//        } catch (Exception e) {
-//            logger.error("Error rejecting and deleting property with ID {}: {}", propertyId, e.getMessage());
-//            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-//                    .body("Error rejecting and deleting property: " + e.getMessage());
-//        }
-//    }
-
-
     // Get Property by ID
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/getPropertyByIds/{propertyId}")
-    public ResponseEntity<?> getPropertyById(@PathVariable Long propertyId) {
+    public ResponseEntity<?> getPropertyById(@PathVariable Long propertyId,
+                                             @RequestHeader("Authorization") String authorizationHeader) {
         try {
+
+            // Extract token from the Authorization header
+            if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
+                throw new SecurityException("Missing or invalid Authorization header");
+            }
+            String token = authorizationHeader.substring(7); // Remove "Bearer "
+
+            // Validate token
+            boolean isValidToken = jwtUtil.validateToken(token);
+            if (!isValidToken) {
+                throw new SecurityException("Invalid or expired token");
+            }
+
             logger.info("Fetching property with ID: {}", propertyId);
             PropertyNew property = propertyNewService.getPropertyById(propertyId);
             if (property == null) {
@@ -156,9 +218,23 @@ public class PropertyNewController {
     }
 
     // Get All Pending Properties
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/getAllPendingProperties")
-    public ResponseEntity<List<PendingProperty>> getAllPendingProperties() {
+    public ResponseEntity<List<PendingProperty>> getAllPendingProperties(@RequestHeader("Authorization") String authorizationHeader) {
         try {
+
+            // Extract token from the Authorization header
+            if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
+                throw new SecurityException("Missing or invalid Authorization header");
+            }
+            String token = authorizationHeader.substring(7); // Remove "Bearer "
+
+            // Validate token
+            boolean isValidToken = jwtUtil.validateToken(token);
+            if (!isValidToken) {
+                throw new SecurityException("Invalid or expired token");
+            }
+
             logger.info("Fetching all pending properties");
             List<PendingProperty> pendingProperties = propertyNewService.getAllPendingProperties();
             if (pendingProperties.isEmpty()) {
@@ -174,9 +250,24 @@ public class PropertyNewController {
     }
 
     // Get Pending Properties by Agent ID
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/getPendingPropertiesByAgent/{agentId}")
-    public ResponseEntity<?> getPendingPropertiesByAgent(@PathVariable Long agentId) {
+    public ResponseEntity<?> getPendingPropertiesByAgent(@PathVariable Long agentId,
+                                                         @RequestHeader("Authorization") String authorizationHeader) {
         try {
+
+            // Extract token from the Authorization header
+            if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
+                throw new SecurityException("Missing or invalid Authorization header");
+            }
+            String token = authorizationHeader.substring(7); // Remove "Bearer "
+
+            // Validate token
+            boolean isValidToken = jwtUtil.validateToken(token);
+            if (!isValidToken) {
+                throw new SecurityException("Invalid or expired token");
+            }
+
             logger.info("Fetching pending properties for agent with ID: {}", agentId);
             List<PendingProperty> pendingProperties = propertyNewService.getPendingPropertiesByAgent(agentId);
             if (pendingProperties.isEmpty()) {
@@ -192,9 +283,24 @@ public class PropertyNewController {
     }
 
     // Get Properties by Agent ID
+    @PreAuthorize("hasAnyRole('AGENT', 'ADMIN')")
     @GetMapping("/getPropertiesByAgentId/{agentId}")
-    public ResponseEntity<?> getPropertiesByAgentId(@PathVariable Long agentId) {
+    public ResponseEntity<?> getPropertiesByAgentId(@PathVariable Long agentId,
+                                                    @RequestHeader("Authorization") String authorizationHeader) {
         try {
+
+            // Extract token from the Authorization header
+            if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
+                throw new SecurityException("Missing or invalid Authorization header");
+            }
+            String token = authorizationHeader.substring(7); // Remove "Bearer "
+
+            // Validate token
+            boolean isValidToken = jwtUtil.validateToken(token);
+            if (!isValidToken) {
+                throw new SecurityException("Invalid or expired token");
+            }
+
             logger.info("Fetching properties for agent with ID: {}", agentId);
             List<PropertyNew> properties = propertyNewService.getPropertiesByAgentId(agentId);
             if (properties.isEmpty()) {
@@ -256,11 +362,26 @@ public class PropertyNewController {
 
 
     // Update Property
+    @PreAuthorize("hasAnyRole('AGENT', 'ADMIN')")
     @PutMapping("/updateProperty/{propertyId}")
     public ResponseEntity<?> updateProperty(@PathVariable Long propertyId,
                                             @RequestPart("property") PropertyNew updatedProperty,
-                                            @RequestPart(value = "images", required = false) List<MultipartFile> newImages) {
+                                            @RequestPart(value = "images", required = false) List<MultipartFile> newImages,
+                                            @RequestHeader("Authorization") String authorizationHeader) {
         try {
+
+            // Extract token from the Authorization header
+            if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
+                throw new SecurityException("Missing or invalid Authorization header");
+            }
+            String token = authorizationHeader.substring(7); // Remove "Bearer "
+
+            // Validate token
+            boolean isValidToken = jwtUtil.validateToken(token);
+            if (!isValidToken) {
+                throw new SecurityException("Invalid or expired token");
+            }
+
             logger.info("Updating property with ID: {}", propertyId);
             PropertyNew updated = propertyNewService.updateProperty(propertyId, updatedProperty, newImages);
             logger.info("Property with ID {} updated successfully", propertyId);
@@ -272,16 +393,50 @@ public class PropertyNewController {
     }
 
     // Delete Property by ID
+    @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/deleteProperty/{propertyId}")
-    public ResponseEntity<?> deleteProperty(@PathVariable Long propertyId) {
+    public ResponseEntity<Map<String, Object>> deleteProperty(@PathVariable Long propertyId,
+                                            @RequestHeader("Authorization") String authorizationHeader) {
+            Map<String, Object> response = new HashMap<>();
         try {
+
+            // Extract token from the Authorization header
+            if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
+                throw new SecurityException("Missing or invalid Authorization header");
+            }
+            String token = authorizationHeader.substring(7); // Remove "Bearer "
+
+            // Validate token
+            boolean isValidToken = jwtUtil.validateToken(token);
+            if (!isValidToken) {
+                throw new SecurityException("Invalid or expired token");
+            }
+
             logger.info("Deleting property with ID: {}", propertyId);
             propertyNewService.deleteProperty(propertyId);
             logger.info("Property with ID {} deleted successfully", propertyId);
-            return ResponseEntity.ok("Property deleted successfully");  // Success response
+
+            response.put("status", "success");
+            response.put("message", "Property deleted successfully");
+            response.put("propertyId", propertyId);
+
+            return ResponseEntity.ok(response);
+        } catch (PropertyNotFoundException e) {
+            logger.error("Property not found with ID: {}", propertyId);
+
+            response.put("status", "error");
+            response.put("message", "Property not found");
+            response.put("propertyId", propertyId);
+
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
         } catch (Exception e) {
             logger.error("Error deleting property with ID {}: {}", propertyId, e.getMessage());
-            return ResponseEntity.status(500).body("Error deleting property: " + e.getMessage());
+
+            response.put("status", "error");
+            response.put("message", "Error deleting property: " + e.getMessage());
+            response.put("propertyId", propertyId);
+
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
     }
 
@@ -289,14 +444,29 @@ public class PropertyNewController {
 
 
     // Add images to Property
+    @PreAuthorize("hasRole('AGENT')")
     @PostMapping("/addImagesToProperty/{propertyId}")
     public ResponseEntity<String> addImagesToProperty(@PathVariable Long propertyId,
-                                                      @RequestParam("images") List<MultipartFile> images) {
+                                                      @RequestParam("images") List<MultipartFile> images,
+                                                      @RequestHeader("Authorization") String authorizationHeader) {
         if (images == null || images.isEmpty()) {
             logger.warn("No images provided for property with ID: {}", propertyId);
             return ResponseEntity.badRequest().body("No images provided");
         }
         try {
+
+            // Extract token from the Authorization header
+            if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
+                throw new SecurityException("Missing or invalid Authorization header");
+            }
+            String token = authorizationHeader.substring(7); // Remove "Bearer "
+
+            // Validate token
+            boolean isValidToken = jwtUtil.validateToken(token);
+            if (!isValidToken) {
+                throw new SecurityException("Invalid or expired token");
+            }
+
             logger.info("Adding images to property with ID: {}", propertyId);
             propertyNewService.addImagesToProperty(propertyId, images);
             logger.info("Images added successfully to property with ID: {}", propertyId);
@@ -308,14 +478,29 @@ public class PropertyNewController {
     }
 
     // Update Property Images
+    @PreAuthorize("hasRole('AGENT')")
     @PutMapping("/updatePropertyImages/{propertyId}")
     public ResponseEntity<String> updatePropertyImages(@PathVariable Long propertyId,
-                                                       @RequestParam("images") List<MultipartFile> images) {
+                                                       @RequestParam("images") List<MultipartFile> images,
+                                                       @RequestHeader("Authorization") String authorizationHeader) {
         if (images == null || images.isEmpty()) {
             logger.warn("No images provided for updating property with ID: {}", propertyId);
             return ResponseEntity.badRequest().body("No images provided for update");
         }
         try {
+
+            // Extract token from the Authorization header
+            if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
+                throw new SecurityException("Missing or invalid Authorization header");
+            }
+            String token = authorizationHeader.substring(7); // Remove "Bearer "
+
+            // Validate token
+            boolean isValidToken = jwtUtil.validateToken(token);
+            if (!isValidToken) {
+                throw new SecurityException("Invalid or expired token");
+            }
+
             logger.info("Updating images for property with ID: {}", propertyId);
             propertyNewService.updateImages(propertyId, images);
             logger.info("Images updated successfully for property with ID: {}", propertyId);
@@ -327,9 +512,24 @@ public class PropertyNewController {
     }
 
     // Get all images for Property
+    @PreAuthorize("hasRole('AGENT')")
     @GetMapping("/getPropertyImages/{propertyId}")
-    public ResponseEntity<List<byte[]>> getPropertyImages(@PathVariable Long propertyId) {
+    public ResponseEntity<List<byte[]>> getPropertyImages(@PathVariable Long propertyId,
+                                                          @RequestHeader("Authorization") String authorizationHeader) {
         try {
+
+            // Extract token from the Authorization header
+            if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
+                throw new SecurityException("Missing or invalid Authorization header");
+            }
+            String token = authorizationHeader.substring(7); // Remove "Bearer "
+
+            // Validate token
+            boolean isValidToken = jwtUtil.validateToken(token);
+            if (!isValidToken) {
+                throw new SecurityException("Invalid or expired token");
+            }
+
             logger.info("Fetching images for property with ID: {}", propertyId);
             List<byte[]> images = propertyNewService.getImages(propertyId);
             if (images == null || images.isEmpty()) {
@@ -343,4 +543,33 @@ public class PropertyNewController {
             return ResponseEntity.status(500).body(null);
         }
     }
+
+    // Delete all images for Property
+    @PreAuthorize("hasRole('AGENT')")
+    @DeleteMapping("/deletePropertiesImages/{propertyId}")
+    public ResponseEntity<String> deleteImages(@PathVariable Long propertyId,
+                                               @RequestHeader("Authorization") String authorizationHeader) {
+        try {
+
+            // Extract token from the Authorization header
+            if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
+                throw new SecurityException("Missing or invalid Authorization header");
+            }
+            String token = authorizationHeader.substring(7); // Remove "Bearer "
+
+            // Validate token
+            boolean isValidToken = jwtUtil.validateToken(token);
+            if (!isValidToken) {
+                throw new SecurityException("Invalid or expired token");
+            }
+
+            propertyNewService.deletePropertiesImages(propertyId);
+            logger.info("Images deleted successfully for property with ID: {}", propertyId);
+            return ResponseEntity.ok("All images deleted successfully for property ID: " + propertyId);
+        } catch (Exception e) {
+            logger.error("Error deleting images for property with ID: {}", propertyId, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error deleting images: " + e.getMessage());
+        }
+    }
+
 }

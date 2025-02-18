@@ -126,7 +126,28 @@ public class PropertyNewServiceimpl implements PropertyNewService {
         return savedProperty;
     }
 
+    @Override
+    @Transactional
+    public void rejectProperty(Long propertyId) {
+        try {
+            PendingProperty pendingProperty = pendingPropertyRepository.findById(propertyId)
+                    .orElseThrow(() -> new PropertyNotFoundException("Pending property not found with ID: " + propertyId));
 
+            // Send email notification to the agent
+            String adminEmail = "bhagwatpatil1110@gmail.com";
+            emailService.sendEmail(adminEmail, pendingProperty.getAgent().getEmail(), "Property Rejected",
+                    "Dear " + pendingProperty.getAgent().getFullName() + ",\n\n" +
+                            "We regret to inform you that your property titled '" + pendingProperty.getTitle() + "' has been rejected.\n\n" +
+                            "For more details, please contact support.\n\nBest regards,\nRealEstate Team");
+
+            // Delete the pending property after rejection
+            pendingPropertyRepository.delete(pendingProperty);
+            logger.info("Property with ID {} rejected and deleted successfully", propertyId);
+        } catch (Exception e) {
+            logger.error("Error rejecting and deleting property with ID {}: {}", propertyId, e.getMessage());
+            throw new RuntimeException("Error rejecting and deleting property", e);
+        }
+    }
 
     // ******************** added methods for properties ********************
 
@@ -266,79 +287,6 @@ public class PropertyNewServiceimpl implements PropertyNewService {
     }
 
 
-//    @Override
-//    @Transactional
-//    public PropertyNew updateProperty(Long propertyId, PropertyNew updatedProperty, List<MultipartFile> newImages) {
-//        try {
-//            logger.info("Updating property with ID: {}", propertyId);
-//
-//            // Fetch the existing property from the database
-//            PropertyNew existingProperty = propertyRepository.findById(propertyId)
-//                    .orElseThrow(() -> new IllegalArgumentException("The Property you are trying to update not found"));
-//
-//            // Update the fields if new values are provided
-//            if (updatedProperty.getTitle() != null) {
-//                existingProperty.setTitle(updatedProperty.getTitle());
-//            }
-//            if (updatedProperty.getPrice() != null) {
-//                existingProperty.setPrice(updatedProperty.getPrice());
-//            }
-//            if (updatedProperty.getSize() != null) {
-//                existingProperty.setSize(updatedProperty.getSize());
-//            }
-//            if (updatedProperty.getAddress() != null) {
-//                existingProperty.setAddress(updatedProperty.getAddress());
-//            }
-//            if (updatedProperty.getYearBuilt() != null) {
-//                existingProperty.setYearBuilt(updatedProperty.getYearBuilt());
-//            }
-//            if (updatedProperty.getPropertyType() != null) {
-//                existingProperty.setPropertyType(updatedProperty.getPropertyType());
-//            }
-//            if (updatedProperty.getBedrooms() != null) {
-//                existingProperty.setBedrooms(updatedProperty.getBedrooms());
-//            }
-//            if (updatedProperty.getBathrooms() != null) {
-//                existingProperty.setBathrooms(updatedProperty.getBathrooms());
-//            }
-//            if (updatedProperty.getAmenities() != null) {
-//                existingProperty.setAmenities(updatedProperty.getAmenities());
-//            }
-//            if (updatedProperty.getFeatures() != null) {
-//                existingProperty.setFeatures(updatedProperty.getFeatures());
-//            }
-//            if (updatedProperty.getProximity() != null) {
-//                existingProperty.setProximity(updatedProperty.getProximity());
-//            }
-//
-//            // If there are new images, update the gallery images list
-//            if (newImages != null && !newImages.isEmpty()) {
-//                List<byte[]> updatedImageList = new ArrayList<>();
-//                for (MultipartFile image : newImages) {
-//                    try {
-//                        updatedImageList.add(image.getBytes());
-//                    } catch (IOException e) {
-//                        logger.error("Error processing image", e);
-//                        throw new RuntimeException("Error processing image", e);
-//                    }
-//                }
-//                existingProperty.setGalleryImages(updatedImageList);
-//            }
-//
-//            // Update timestamps
-//            existingProperty.setUpdatedAt(new Timestamp(System.currentTimeMillis()));
-//
-//            // Save the updated property back into the repository
-//            PropertyNew savedProperty = propertyRepository.save(existingProperty);
-//
-//            logger.info("Property updated successfully. Property ID: {}", savedProperty.getPropertyId());
-//            return savedProperty;
-//        } catch (Exception e) {
-//            logger.error("Error updating property with ID: {}", propertyId, e);
-//            throw new RuntimeException("Error updating property", e);
-//        }
-//    }
-
     @Override
     @Transactional
     public PropertyNew updateProperty(Long propertyId, PropertyNew updatedProperty, List<MultipartFile> newImages) {
@@ -349,31 +297,51 @@ public class PropertyNewServiceimpl implements PropertyNewService {
             PropertyNew existingProperty = propertyRepository.findById(propertyId)
                     .orElseThrow(() -> new IllegalArgumentException("The Property you are trying to update not found"));
 
-            // Fetch agent only if it's updated
-            if (updatedProperty.getAgent() != null && updatedProperty.getAgent().getId() != null) {
-                Agent existingAgent = agentRepository.findById(updatedProperty.getAgent().getId())
-                        .orElseThrow(() -> new AgentNotFoundException("Agent not found with ID: " + updatedProperty.getAgent().getId()));
-                existingProperty.setAgent(existingAgent); // ✅ Assign a managed agent
+            // Update the fields if new values are provided
+            if (updatedProperty.getTitle() != null) {
+                existingProperty.setTitle(updatedProperty.getTitle());
             }
-
-            // Update other fields
-            if (updatedProperty.getTitle() != null) existingProperty.setTitle(updatedProperty.getTitle());
-            if (updatedProperty.getPrice() != null) existingProperty.setPrice(updatedProperty.getPrice());
-            if (updatedProperty.getSize() != null) existingProperty.setSize(updatedProperty.getSize());
-            if (updatedProperty.getAddress() != null) existingProperty.setAddress(updatedProperty.getAddress());
-            if (updatedProperty.getYearBuilt() != null) existingProperty.setYearBuilt(updatedProperty.getYearBuilt());
-            if (updatedProperty.getPropertyType() != null) existingProperty.setPropertyType(updatedProperty.getPropertyType());
-            if (updatedProperty.getBedrooms() != null) existingProperty.setBedrooms(updatedProperty.getBedrooms());
-            if (updatedProperty.getBathrooms() != null) existingProperty.setBathrooms(updatedProperty.getBathrooms());
-            if (updatedProperty.getAmenities() != null) existingProperty.setAmenities(updatedProperty.getAmenities());
-            if (updatedProperty.getFeatures() != null) existingProperty.setFeatures(updatedProperty.getFeatures());
-            if (updatedProperty.getProximity() != null) existingProperty.setProximity(updatedProperty.getProximity());
+            if (updatedProperty.getPrice() != null) {
+                existingProperty.setPrice(updatedProperty.getPrice());
+            }
+            if (updatedProperty.getSize() != null) {
+                existingProperty.setSize(updatedProperty.getSize());
+            }
+            if (updatedProperty.getAddress() != null) {
+                existingProperty.setAddress(updatedProperty.getAddress());
+            }
+            if (updatedProperty.getYearBuilt() != null) {
+                existingProperty.setYearBuilt(updatedProperty.getYearBuilt());
+            }
+            if (updatedProperty.getPropertyType() != null) {
+                existingProperty.setPropertyType(updatedProperty.getPropertyType());
+            }
+            if (updatedProperty.getBedrooms() != null) {
+                existingProperty.setBedrooms(updatedProperty.getBedrooms());
+            }
+            if (updatedProperty.getBathrooms() != null) {
+                existingProperty.setBathrooms(updatedProperty.getBathrooms());
+            }
+            if (updatedProperty.getAmenities() != null) {
+                existingProperty.setAmenities(updatedProperty.getAmenities());
+            }
+            if (updatedProperty.getFeatures() != null) {
+                existingProperty.setFeatures(updatedProperty.getFeatures());
+            }
+            if (updatedProperty.getProximity() != null) {
+                existingProperty.setProximity(updatedProperty.getProximity());
+            }
 
             // If there are new images, update the gallery images list
             if (newImages != null && !newImages.isEmpty()) {
                 List<byte[]> updatedImageList = new ArrayList<>();
                 for (MultipartFile image : newImages) {
-                    updatedImageList.add(image.getBytes());
+                    try {
+                        updatedImageList.add(image.getBytes());
+                    } catch (IOException e) {
+                        logger.error("Error processing image", e);
+                        throw new RuntimeException("Error processing image", e);
+                    }
                 }
                 existingProperty.setGalleryImages(updatedImageList);
             }
@@ -381,7 +349,7 @@ public class PropertyNewServiceimpl implements PropertyNewService {
             // Update timestamps
             existingProperty.setUpdatedAt(new Timestamp(System.currentTimeMillis()));
 
-            // Save the updated property
+            // Save the updated property back into the repository
             PropertyNew savedProperty = propertyRepository.save(existingProperty);
 
             logger.info("Property updated successfully. Property ID: {}", savedProperty.getPropertyId());
@@ -392,6 +360,58 @@ public class PropertyNewServiceimpl implements PropertyNewService {
         }
     }
 
+//    @Override
+//    @Transactional
+//    public PropertyNew updateAgentAndProperty(Long propertyId, PropertyNew updatedProperty, List<MultipartFile> newImages) {
+//        try {
+//            logger.info("Updating property with ID: {}", propertyId);
+//
+//            // Fetch the existing property from the database
+//            PropertyNew existingProperty = propertyRepository.findById(propertyId)
+//                    .orElseThrow(() -> new IllegalArgumentException("The Property you are trying to update not found"));
+//
+//            // Fetch agent only if it's updated
+//            if (updatedProperty.getAgent() != null && updatedProperty.getAgent().getId() != null) {
+//                Agent existingAgent = agentRepository.findById(updatedProperty.getAgent().getId())
+//                        .orElseThrow(() -> new AgentNotFoundException("Agent not found with ID: " + updatedProperty.getAgent().getId()));
+//                existingProperty.setAgent(existingAgent); // ✅ Assign a managed agent
+//            }
+//
+//            // Update other fields
+//            if (updatedProperty.getTitle() != null) existingProperty.setTitle(updatedProperty.getTitle());
+//            if (updatedProperty.getPrice() != null) existingProperty.setPrice(updatedProperty.getPrice());
+//            if (updatedProperty.getSize() != null) existingProperty.setSize(updatedProperty.getSize());
+//            if (updatedProperty.getAddress() != null) existingProperty.setAddress(updatedProperty.getAddress());
+//            if (updatedProperty.getYearBuilt() != null) existingProperty.setYearBuilt(updatedProperty.getYearBuilt());
+//            if (updatedProperty.getPropertyType() != null) existingProperty.setPropertyType(updatedProperty.getPropertyType());
+//            if (updatedProperty.getBedrooms() != null) existingProperty.setBedrooms(updatedProperty.getBedrooms());
+//            if (updatedProperty.getBathrooms() != null) existingProperty.setBathrooms(updatedProperty.getBathrooms());
+//            if (updatedProperty.getAmenities() != null) existingProperty.setAmenities(updatedProperty.getAmenities());
+//            if (updatedProperty.getFeatures() != null) existingProperty.setFeatures(updatedProperty.getFeatures());
+//            if (updatedProperty.getProximity() != null) existingProperty.setProximity(updatedProperty.getProximity());
+//
+//            // If there are new images, update the gallery images list
+//            if (newImages != null && !newImages.isEmpty()) {
+//                List<byte[]> updatedImageList = new ArrayList<>();
+//                for (MultipartFile image : newImages) {
+//                    updatedImageList.add(image.getBytes());
+//                }
+//                existingProperty.setGalleryImages(updatedImageList);
+//            }
+//
+//            // Update timestamps
+//            existingProperty.setUpdatedAt(new Timestamp(System.currentTimeMillis()));
+//
+//            // Save the updated property
+//            PropertyNew savedProperty = propertyRepository.save(existingProperty);
+//
+//            logger.info("Property updated successfully. Property ID: {}", savedProperty.getPropertyId());
+//            return savedProperty;
+//        } catch (Exception e) {
+//            logger.error("Error updating property with ID: {}", propertyId, e);
+//            throw new RuntimeException("Error updating property", e);
+//        }
+//    }
 
 
     @Override
@@ -407,23 +427,7 @@ public class PropertyNewServiceimpl implements PropertyNewService {
         }
     }
 
-    @Override
-    @Transactional
-    public void rejectProperty(Long propertyId) {
-        try {
-            PendingProperty pendingProperty = pendingPropertyRepository.findById(propertyId)
-                    .orElseThrow(() -> new PropertyNotFoundException("Pending property not found with ID: " + propertyId));
-
-            pendingPropertyRepository.delete(pendingProperty);
-            logger.info("Property with ID {} rejected and deleted successfully", propertyId);
-        } catch (Exception e) {
-            logger.error("Error rejecting and deleting property with ID {}: {}", propertyId, e.getMessage());
-            throw new RuntimeException("Error rejecting and deleting property", e);
-        }
-    }
-
     // property image methods implementation
-
 
     @Override
     @Transactional
@@ -493,5 +497,26 @@ public class PropertyNewServiceimpl implements PropertyNewService {
             throw new RuntimeException("Error fetching images", e);
         }
     }
+
+    @Override
+    @Transactional
+    public void deletePropertiesImages(Long propertyId) {
+        try {
+            PropertyNew existingProperty = propertyRepository.findById(propertyId)
+                    .orElseThrow(() -> new IllegalArgumentException("Property not found"));
+
+            // Clear the existing images list
+            existingProperty.setGalleryImages(new ArrayList<>());
+
+            // Save the updated property
+            propertyRepository.save(existingProperty);
+
+            logger.info("All images deleted successfully for property with ID: {}", propertyId);
+        } catch (Exception e) {
+            logger.error("Error deleting images for property with ID: {}", propertyId, e);
+            throw new RuntimeException("Error deleting images", e);
+        }
+    }
+
 
 }

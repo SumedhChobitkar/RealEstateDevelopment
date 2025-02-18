@@ -4,11 +4,12 @@ import com.RealEstateDevelopment.Entity.Agent;
 import com.RealEstateDevelopment.Entity.TemporaryAgent;
 import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
+import java.util.Map;
 
 public interface AgentService {
-   // Agent registerAgent(Agent agent, MultipartFile profilePicture) throws Exception;
+    TemporaryAgent registerTemporaryAgent(TemporaryAgent agent, MultipartFile profilePicture) throws Exception;
 
-    Agent loginAgent(String username, String password) throws Exception;
+    Map<String, Object> loginAgent(String username, String password) throws Exception;
 
     Agent updateAgent(Long id, Agent updatedAgent, MultipartFile profilePicture) throws Exception;
 
@@ -24,7 +25,6 @@ public interface AgentService {
 
     // new added methods
 
-    TemporaryAgent registerTemporaryAgent(TemporaryAgent agent, MultipartFile profilePicture) throws Exception;
     Agent approveAgent(Long tempAgentId) throws Exception;
     void rejectAgent(Long tempAgentId) throws Exception;
     List<TemporaryAgent> getAllPendingAgents();

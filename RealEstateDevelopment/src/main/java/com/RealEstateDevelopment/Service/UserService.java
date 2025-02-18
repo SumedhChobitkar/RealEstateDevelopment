@@ -3,6 +3,7 @@ package com.RealEstateDevelopment.Service;
 import com.RealEstateDevelopment.Entity.User;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
+import java.util.Map;
 
 public interface UserService {
 
@@ -10,7 +11,7 @@ public interface UserService {
 
     String verifyOtpToRegister(String email, String otp);
 
-    User loginUser(String username, String password) throws Exception;
+    Map<String, Object> loginUser(String username, String password) throws Exception;
 
     @Transactional
     User updateUserDetails(Long userId, User user);
