@@ -7,18 +7,21 @@ import com.RealEstateDevelopment.Exception.UserNotFoundException;
 import com.RealEstateDevelopment.Repository.AdminRepository;
 import com.RealEstateDevelopment.Repository.AgentRepository;
 import com.RealEstateDevelopment.Repository.PropertyNewRepository;
+import com.RealEstateDevelopment.Security.JwtUtil;
 import com.RealEstateDevelopment.Service.AdminService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
-
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @Transactional
@@ -37,6 +40,9 @@ public class AdminServiceImpl implements AdminService {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private JwtUtil jwtUtil;
 
     @Override
     public String registerAdmin(Admin admin) {
@@ -68,22 +74,35 @@ public class AdminServiceImpl implements AdminService {
     }
 
     @Override
-    public String loginAdmin(String username, String password) {
-        logger.info("Admin login attempt for username: {}", username);
-        Admin admin = adminRepository.findByUsername(username)
-                .orElseThrow(() -> {
-                    logger.error("Admin not found with username: {}", username);
-                    return new UserNotFoundException("Admin not found");
-                });
+    public Map<String, Object> loginAdmin(String username, String password) {
+        try {
+            logger.info("Admin login attempt for username: {}", username);
 
-        if (!passwordEncoder.matches(password, admin.getPassword())) {
-            logger.error("Invalid password for username: {}", username);
-            throw new IllegalArgumentException("Invalid username or password.");
+            Admin admin = adminRepository.findByUsername(username)
+                    .orElseThrow(() -> new UsernameNotFoundException("Admin not found"));
+
+            if (!passwordEncoder.matches(password, admin.getPassword())) {
+                logger.warn("Invalid password for admin username: {}", username);
+                throw new IllegalArgumentException("Invalid username or password.");
+            }
+
+            // Generate JWT Token for Admin
+            String token = jwtUtil.generateToken(admin.getUsername(), admin.getRole().name());
+
+            // Prepare response
+            Map<String, Object> response = new HashMap<>();
+            response.put("token", token);
+            response.put("username", admin.getUsername());
+            response.put("role", "ADMIN");
+
+            logger.info("Admin login successful: {}", username);
+            return response;
+        } catch (Exception e) {
+            logger.error("Error during admin login: {}", e.getMessage(), e);
+            throw new RuntimeException("Error during admin login: " + e.getMessage(), e);
         }
-
-        logger.info("Login successful for username: {}", username);
-        return "Login successful!";
     }
+
 
     @Override
     public void logoutAdmin(String username) {
@@ -155,7 +174,7 @@ public class AdminServiceImpl implements AdminService {
 
 
     @Override
-    @jakarta.transaction.Transactional
+    @Transactional
     public PropertyNew updateAgentAndProperty(Long propertyId, PropertyNew updatedProperty, List<MultipartFile> newImages) {
         try {
             logger.info("Updating property with ID: {}", propertyId);

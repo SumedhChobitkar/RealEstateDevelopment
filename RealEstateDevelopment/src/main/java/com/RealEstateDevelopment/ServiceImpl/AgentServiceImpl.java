@@ -6,6 +6,7 @@ import com.RealEstateDevelopment.Entity.Status;
 import com.RealEstateDevelopment.Entity.TemporaryAgent;
 import com.RealEstateDevelopment.Repository.AgentRepository;
 import com.RealEstateDevelopment.Repository.TemporaryAgentRepository;
+import com.RealEstateDevelopment.Security.JwtUtil;
 import com.RealEstateDevelopment.Service.AgentService;
 import com.RealEstateDevelopment.CommanUtil.ValidationClass;
 import com.RealEstateDevelopment.Service.EmailService;
@@ -13,12 +14,15 @@ import jakarta.transaction.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -35,6 +39,9 @@ public class AgentServiceImpl implements AgentService {
 
     @Autowired
     private BCryptPasswordEncoder passwordEncoder;
+
+    @Autowired
+    private JwtUtil jwtUtil;
 
     private static final Logger logger = LoggerFactory.getLogger(AgentServiceImpl.class);
 
@@ -71,6 +78,7 @@ public class AgentServiceImpl implements AgentService {
     @Override
     @Transactional
     public Agent approveAgent(Long tempAgentId) throws Exception {
+
         TemporaryAgent tempAgent = temporaryAgentRepository.findById(tempAgentId)
                 .orElseThrow(() -> new IllegalArgumentException("Temporary agent not found"));
 
@@ -114,6 +122,7 @@ public class AgentServiceImpl implements AgentService {
 
     @Override
     public void rejectAgent(Long tempAgentId) throws Exception {
+
         TemporaryAgent tempAgent = temporaryAgentRepository.findById(tempAgentId)
                 .orElseThrow(() -> new IllegalArgumentException("Temporary agent not found"));
 
@@ -128,37 +137,41 @@ public class AgentServiceImpl implements AgentService {
         return temporaryAgentRepository.findAll();
     }
 
-
     @Override
-    public Agent loginAgent(String username, String password) throws Exception {
+    public Map<String, Object> loginAgent(String username, String password) throws Exception {
         try {
-            logger.info("Attempting to login agent with username: {}", username);
-            Optional<Agent> optionalAgent = agentRepository.findByUserName(username);
+            logger.info("Agent login attempt for username: {}", username);
 
-            if (optionalAgent.isEmpty()) {
-                logger.warn("Invalid login attempt for username: {}", username);
-                throw new IllegalArgumentException("Invalid username or password.");
-            }
+            Agent agent = agentRepository.findByUserName(username)
+                    .orElseThrow(() -> new UsernameNotFoundException("Agent not found"));
 
-            Agent agent = optionalAgent.get();
-
-            // Compare raw password with the encoded password
             if (!passwordEncoder.matches(password, agent.getPassword())) {
-                logger.warn("Invalid login attempt for username: {}", username);
+                logger.warn("Invalid password for agent username: {}", username);
                 throw new IllegalArgumentException("Invalid username or password.");
             }
 
-            logger.info("Agent with username: {} logged in successfully.", username);
-            return agent;
+            // Generate JWT Token for Agent
+            String token = jwtUtil.generateToken(agent.getUserName(), agent.getRole().name());
+
+            // Prepare response
+            Map<String, Object> response = new HashMap<>();
+            response.put("token", token);
+            response.put("username", agent.getUserName());
+            response.put("role", "AGENT");
+
+            logger.info("Agent login successful: {}", username);
+            return response;
         } catch (Exception e) {
             logger.error("Error during agent login: {}", e.getMessage(), e);
             throw new Exception("Error during agent login: " + e.getMessage(), e);
         }
     }
 
+
     @Override
     public Agent updateAgent(Long id, Agent updatedAgent, MultipartFile profilePicture) throws Exception {
         try {
+
             logger.info("Attempting to update agent with ID: {}", id);
 
             // Validate agent data
@@ -199,6 +212,7 @@ public class AgentServiceImpl implements AgentService {
     @Override
     public void deleteAgent(Long id) throws Exception {
         try {
+
             logger.info("Attempting to delete agent with ID: {}", id);
             Agent agent = agentRepository.findById(id)
                     .orElseThrow(() -> new IllegalArgumentException("Agent not found."));
@@ -226,6 +240,7 @@ public class AgentServiceImpl implements AgentService {
     @Override
     public Agent getAgentById(Long id) throws Exception {
         try {
+
             logger.info("Fetching agent details with ID: {}", id);
             return agentRepository.findById(id)
                     .orElseThrow(() -> new IllegalArgumentException("Agent not found."));
@@ -238,6 +253,7 @@ public class AgentServiceImpl implements AgentService {
     @Override
     public List<Agent> getAllAgents() {
         try {
+
             logger.info("Fetching all agents.");
             return agentRepository.findAll();
         } catch (Exception e) {
@@ -249,6 +265,7 @@ public class AgentServiceImpl implements AgentService {
     @Override
     public void changeAgentPassword(Long id, String oldPassword, String newPassword) throws Exception {
         try {
+
             logger.info("Attempting to change password for agent with ID: {}", id);
             Agent agent = agentRepository.findById(id)
                     .orElseThrow(() -> new IllegalArgumentException("Agent not found."));
@@ -287,4 +304,5 @@ public class AgentServiceImpl implements AgentService {
             throw new IllegalArgumentException("Mobile number should be 10 digits.");
         }
     }
+
 }

@@ -5,10 +5,11 @@ import com.RealEstateDevelopment.Entity.PropertyNew;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.Map;
 
 public interface AdminService {
     String registerAdmin(Admin admin);
-    String loginAdmin(String username, String password);
+    Map<String, Object> loginAdmin(String username, String password) throws Exception;
     void logoutAdmin(String username);
     void deleteAdmin(Long adminId);
     Admin getAdminById(Long adminId);

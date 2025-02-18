@@ -21,7 +21,12 @@ public interface PropertyNewService {
     List<PendingProperty> getAllPendingProperties();
     List<PropertyNew> getPropertiesByAgentId(Long agentId);
     List<PropertyNew> searchProperties(String keyword);
+
+    @Transactional
     PropertyNew updateProperty(Long propertyId, PropertyNew updatedProperty, List<MultipartFile> newImages);
+
+   // PropertyNew updateAgentAndProperty(Long propertyId, PropertyNew updatedProperty, List<MultipartFile> newImages);
+
     List<PropertyNew> searchProperty(String keyword, Double minPrice, Double maxPrice,
                                        String propertyType, Integer minBedrooms, Integer maxBedrooms,
                                        Integer minBathrooms, Integer maxBathrooms,
@@ -39,4 +44,6 @@ public interface PropertyNewService {
     void updateImages(Long propertyId, List<MultipartFile> images);
     List<byte[]> getImages(Long propertyId);
 
+    @Transactional
+    void deletePropertiesImages(Long propertyId);
 }
