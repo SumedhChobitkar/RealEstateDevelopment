@@ -1,5 +1,6 @@
 package com.RealEstateDevelopment.Controller;
 
+import com.RealEstateDevelopment.Entity.Role;
 import com.RealEstateDevelopment.Entity.User;
 import com.RealEstateDevelopment.Exception.UserNotFoundException;
 import com.RealEstateDevelopment.Repository.ForgotPasswordOtpRepository;
@@ -10,6 +11,8 @@ import com.RealEstateDevelopment.ServiceImpl.ForgotPasswordService;
 import com.RealEstateDevelopment.ServiceImpl.LogoutService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -82,9 +85,38 @@ public class UserController {
         }
     }
 
+//    @PostMapping("/loginUser")
+//    public ResponseEntity<Map<String, Object>> loginUser(@RequestBody Map<String, String> loginDetails) {
+//        Map<String, Object> response = new HashMap<>();
+//        try {
+//            logger.info("User login attempt...");
+//            String username = loginDetails.get("username");
+//            String password = loginDetails.get("password");
+//
+//            if (username == null || password == null) {
+//                logger.warn("Username or password is missing.");
+//                response.put("status", 400);
+//                response.put("message", "Username and password are required.");
+//                return ResponseEntity.badRequest().body(response);
+//            }
+//
+//            Map<String, Object> loginResponse = userService.loginUser(username, password);
+//            response.put("status", 200);
+//            response.put("data", loginResponse);
+//            response.put("message", "User logged in successfully");
+//
+//            return ResponseEntity.ok(response);
+//        } catch (Exception e) {
+//            logger.error("Error during user login: {}", e.getMessage());
+//            response.put("status", 400);
+//            response.put("message", "Error during login: " + e.getMessage());
+//            return ResponseEntity.badRequest().body(response);
+//        }
+//    }
+
     @PostMapping("/loginUser")
-    public ResponseEntity<Map<String, Object>> loginUser(@RequestBody Map<String, String> loginDetails) {
-        Map<String, Object> response = new HashMap<>();
+    public ResponseEntity<Map<String, Object>> loginUser(@RequestBody Map<String, String> loginDetails, HttpServletResponse response) {
+        Map<String, Object> responseBody = new HashMap<>();
         try {
             logger.info("User login attempt...");
             String username = loginDetails.get("username");
@@ -92,24 +124,39 @@ public class UserController {
 
             if (username == null || password == null) {
                 logger.warn("Username or password is missing.");
-                response.put("status", 400);
-                response.put("message", "Username and password are required.");
-                return ResponseEntity.badRequest().body(response);
+                responseBody.put("status", 400);
+                responseBody.put("message", "Username and password are required.");
+                return ResponseEntity.badRequest().body(responseBody);
             }
 
+            // Authenticate and get user details
             Map<String, Object> loginResponse = userService.loginUser(username, password);
-            response.put("status", 200);
-            response.put("data", loginResponse);
-            response.put("message", "User logged in successfully");
 
-            return ResponseEntity.ok(response);
+            // 🔹 Generate JWT token
+            String token = jwtUtil.generateToken((Long) loginResponse.get("userId"), username, (Role) loginResponse.get("role"));
+
+            // 🔹 Store token in an HttpOnly cookie
+            Cookie jwtCookie = new Cookie("jwt_token", token);
+            jwtCookie.setHttpOnly(true);
+            jwtCookie.setSecure(true); // Enable only for HTTPS
+            jwtCookie.setPath("/");
+            jwtCookie.setMaxAge(60 * 60 * 24); // 1 day expiration
+            response.addCookie(jwtCookie); // ✅ Store token in cookies
+
+            // 🔹 Return user details (without token in response body)
+            responseBody.put("status", 200);
+            responseBody.put("data", loginResponse);
+            responseBody.put("message", "User logged in successfully");
+
+            return ResponseEntity.ok(responseBody);
         } catch (Exception e) {
             logger.error("Error during user login: {}", e.getMessage());
-            response.put("status", 400);
-            response.put("message", "Error during login: " + e.getMessage());
-            return ResponseEntity.badRequest().body(response);
+            responseBody.put("status", 400);
+            responseBody.put("message", "Error during login: " + e.getMessage());
+            return ResponseEntity.badRequest().body(responseBody);
         }
     }
+
 
     @PreAuthorize("hasRole('USER')")
     @PutMapping("/update/{userId}")

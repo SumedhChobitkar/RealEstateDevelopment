@@ -1,5 +1,6 @@
 package com.RealEstateDevelopment.Security;
 
+import com.RealEstateDevelopment.Entity.Role;
 import com.RealEstateDevelopment.Repository.BlacklistedTokenRepository;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
@@ -7,6 +8,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 import java.security.Key;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
@@ -22,16 +24,51 @@ public class JwtUtil {
         this.blacklistedTokenRepository = blacklistedTokenRepository;
     }
 
-    // Generate Token with role
-    public String generateToken(String username, String role) {
+//    public String generateToken(Long id, String username, String role) {
+//        Map<String, Object> claims = new HashMap<>();
+//        claims.put("role", role);
+//
+//        // Store the ID based on role type
+//        if ("USER".equals(role)) {
+//            claims.put("userId", id);
+//        } else if ("ADMIN".equals(role)) {
+//            claims.put("adminId", id);
+//        } else if ("AGENT".equals(role)) {
+//            claims.put("agentId", id);
+//        }
+//
+//        return Jwts.builder()
+//                .setClaims(claims)
+//                .setSubject(username)
+//                .setIssuedAt(new Date())
+//                .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME))
+//                .signWith(key, SignatureAlgorithm.HS512)
+//                .compact();
+//    }
+
+    public String generateToken(Long id, String username, Role role) {
         return Jwts.builder()
-                .setClaims(Map.of("role", role)) // Include role in token
+                .setClaims(Map.of("role", role.name())) // 🔹 Convert enum to String using `.name()`
                 .setSubject(username)
+                .claim("id", id)
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME))
-                .signWith(key, SignatureAlgorithm.HS512) // Use HS512 algorithm with the correct key size
+                .signWith(key, SignatureAlgorithm.HS512)
                 .compact();
     }
+
+    public String generateToken(Long id, String username, String role) { // 🔹 Change Role to String
+        return Jwts.builder()
+                .setClaims(Map.of("role", role)) // ✅ Pass role as String
+                .setSubject(username)
+                .claim("id", id)
+                .setIssuedAt(new Date())
+                .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME))
+                .signWith(key, SignatureAlgorithm.HS512)
+                .compact();
+    }
+
+
 
     // Extract Username from Token
     public String extractUsername(String token) {

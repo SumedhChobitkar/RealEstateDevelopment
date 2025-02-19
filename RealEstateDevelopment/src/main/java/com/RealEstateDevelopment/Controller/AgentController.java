@@ -1,12 +1,15 @@
 package com.RealEstateDevelopment.Controller;
 
 import com.RealEstateDevelopment.Entity.Agent;
+import com.RealEstateDevelopment.Entity.Role;
 import com.RealEstateDevelopment.Entity.TemporaryAgent;
 import com.RealEstateDevelopment.Exception.AgentNotFoundException;
 import com.RealEstateDevelopment.Security.JwtUtil;
 import com.RealEstateDevelopment.Service.AgentService;
 import com.RealEstateDevelopment.ServiceImpl.LogoutService;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -158,9 +161,38 @@ public class AgentController {
         return ResponseEntity.ok(agentService.getAllPendingAgents());
     }
 
+//    @PostMapping("/loginAgent")
+//    public ResponseEntity<Map<String, Object>> loginAgent(@RequestBody Map<String, String> loginDetails) {
+//        Map<String, Object> response = new HashMap<>();
+//        try {
+//            logger.info("Agent login attempt...");
+//            String username = loginDetails.get("username");
+//            String password = loginDetails.get("password");
+//
+//            if (username == null || password == null) {
+//                logger.warn("Username or password is missing.");
+//                response.put("status", 400);
+//                response.put("message", "Username and password are required.");
+//                return ResponseEntity.badRequest().body(response);
+//            }
+//
+//            Map<String, Object> loginResponse = agentService.loginAgent(username, password);
+//            response.put("status", 200);
+//            response.put("data", loginResponse);
+//            response.put("message", "Agent logged in successfully");
+//
+//            return ResponseEntity.ok(response);
+//        } catch (Exception e) {
+//            logger.error("Error during agent login: {}", e.getMessage());
+//            response.put("status", 400);
+//            response.put("message", "Error during agent login: " + e.getMessage());
+//            return ResponseEntity.badRequest().body(response);
+//        }
+//    }
+
     @PostMapping("/loginAgent")
-    public ResponseEntity<Map<String, Object>> loginAgent(@RequestBody Map<String, String> loginDetails) {
-        Map<String, Object> response = new HashMap<>();
+    public ResponseEntity<Map<String, Object>> loginAgent(@RequestBody Map<String, String> loginDetails, HttpServletResponse response) {
+        Map<String, Object> responseBody = new HashMap<>();
         try {
             logger.info("Agent login attempt...");
             String username = loginDetails.get("username");
@@ -168,22 +200,36 @@ public class AgentController {
 
             if (username == null || password == null) {
                 logger.warn("Username or password is missing.");
-                response.put("status", 400);
-                response.put("message", "Username and password are required.");
-                return ResponseEntity.badRequest().body(response);
+                responseBody.put("status", 400);
+                responseBody.put("message", "Username and password are required.");
+                return ResponseEntity.badRequest().body(responseBody);
             }
 
+            // Authenticate and get agent details
             Map<String, Object> loginResponse = agentService.loginAgent(username, password);
-            response.put("status", 200);
-            response.put("data", loginResponse);
-            response.put("message", "Agent logged in successfully");
 
-            return ResponseEntity.ok(response);
+            // 🔹 Generate JWT token
+            String token = jwtUtil.generateToken((Long) loginResponse.get("agentId"), username, (String) loginResponse.get("role"));
+
+            // 🔹 Store token in an HttpOnly cookie
+            Cookie jwtCookie = new Cookie("jwt_token", token);
+            jwtCookie.setHttpOnly(true);
+            jwtCookie.setSecure(true); // Enable only for HTTPS
+            jwtCookie.setPath("/");
+            jwtCookie.setMaxAge(60 * 60 * 24); // 1 day expiration
+            response.addCookie(jwtCookie); // ✅ Store token in cookies
+
+            // 🔹 Return agent details (without token in response body)
+            responseBody.put("status", 200);
+            responseBody.put("data", loginResponse);
+            responseBody.put("message", "Agent logged in successfully");
+
+            return ResponseEntity.ok(responseBody);
         } catch (Exception e) {
             logger.error("Error during agent login: {}", e.getMessage());
-            response.put("status", 400);
-            response.put("message", "Error during agent login: " + e.getMessage());
-            return ResponseEntity.badRequest().body(response);
+            responseBody.put("status", 400);
+            responseBody.put("message", "Error during agent login: " + e.getMessage());
+            return ResponseEntity.badRequest().body(responseBody);
         }
     }
 
