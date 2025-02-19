@@ -1,11 +1,14 @@
 package com.RealEstateDevelopment.Controller;
 
+
+import com.RealEstateDevelopment.Entity.Location;
 import com.RealEstateDevelopment.Entity.PendingProperty;
 import com.RealEstateDevelopment.Entity.PropertyNew;
 import com.RealEstateDevelopment.Exceptions.PropertyNotFoundException;
 import com.RealEstateDevelopment.Security.JwtUtil;
 import com.RealEstateDevelopment.Service.PropertyNewService;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,6 +19,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -35,60 +39,196 @@ public class PropertyNewController {
 
     // Add Property
 
-    @PreAuthorize("hasRole('AGENT')")
-    @PostMapping("/addProperty/{agentId}")
-    public ResponseEntity<Map<String, Object>> addProperty(
-            @PathVariable Long agentId,
-            @RequestPart("property") String propertyJson,
-            @RequestPart(value = "images", required = false) List<MultipartFile> images,
-            @RequestHeader("Authorization") String authorizationHeader) {
+//    @PreAuthorize("hasRole('AGENT')")
+//    @PostMapping("/addProperty/{agentId}")
+//    public ResponseEntity<Map<String, Object>> addProperty(
+//            @PathVariable Long agentId,
+//            @RequestPart("property") String propertyJson,
+//            @RequestPart(value = "images", required = false) List<MultipartFile> images,
+//            @RequestHeader("Authorization") String authorizationHeader) {
+//
+//        Map<String, Object> response = new HashMap<>();
+//
+//        try {
+//
+//            // Extract token from the Authorization header
+//            if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
+//                throw new SecurityException("Missing or invalid Authorization header");
+//            }
+//            String token = authorizationHeader.substring(7); // Remove "Bearer "
+//
+//            // Validate token
+//            boolean isValidToken = jwtUtil.validateToken(token);
+//            if (!isValidToken) {
+//                throw new SecurityException("Invalid or expired token");
+//            }
+//
+//            // Convert JSON string to PendingProperty object
+//            ObjectMapper objectMapper = new ObjectMapper();
+//            PendingProperty pendingProperty = objectMapper.readValue(propertyJson, PendingProperty.class);
+//
+//            // Save the property
+//            PendingProperty savedProperty = propertyNewService.addProperty(agentId, pendingProperty, images);
+//
+//            // Prepare successful response
+//            response.put("status", "success");
+//            response.put("message", "Property added successfully.");
+//            response.put("property", savedProperty);
+//
+//            return ResponseEntity.ok(response);
+//        } catch (JsonProcessingException e) {
+//            logger.error("Invalid JSON format for property: {}", e.getMessage(), e);
+//            response.put("status", "error");
+//            response.put("message", "Invalid JSON format for property.");
+//            return ResponseEntity.badRequest().body(response);
+//        } catch (IOException e) {
+//            logger.error("Error processing property images: {}", e.getMessage(), e);
+//            response.put("status", "error");
+//            response.put("message", "Error processing property images.");
+//            return ResponseEntity.badRequest().body(response);
+//        } catch (Exception e) {
+//            logger.error("Unexpected error adding property: {}", e.getMessage(), e);
+//            response.put("status", "error");
+//            response.put("message", "An unexpected error occurred while adding the property.");
+//            return ResponseEntity.internalServerError().body(response);
+//        }
+//    }
 
-        Map<String, Object> response = new HashMap<>();
+//    @PreAuthorize("hasRole('AGENT')")
+//    @PostMapping("/addProperty/{agentId}")
+//    public ResponseEntity<Map<String, Object>> addProperty(
+//            @PathVariable Long agentId,
+//            @RequestPart("property") String propertyJson,
+//            @RequestPart(value = "images", required = false) List<MultipartFile> images,
+//            @RequestHeader("Authorization") String authorizationHeader,
+//            @RequestPart(value = "locations", required = false) List<Location> locations) {
+//
+//        Map<String, Object> response = new HashMap<>();
+//
+//        try {
+//
+//            // Extract token from the Authorization header
+//            if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
+//                throw new SecurityException("Missing or invalid Authorization header");
+//            }
+//            String token = authorizationHeader.substring(7); // Remove "Bearer "
+//
+//            // Validate token
+//            boolean isValidToken = jwtUtil.validateToken(token);
+//            if (!isValidToken) {
+//                throw new SecurityException("Invalid or expired token");
+//            }
+//
+//            // Convert JSON string to PendingProperty object
+//            ObjectMapper objectMapper = new ObjectMapper();
+//            PendingProperty pendingProperty = objectMapper.readValue(propertyJson, PendingProperty.class);
+//
+//            // Save the property
+//            PendingProperty savedProperty = propertyNewService.addProperty(agentId, pendingProperty, images,locations);
+//
+//            // Prepare successful response
+//            response.put("status", "success");
+//            response.put("message", "Property added successfully.");
+//            response.put("property", savedProperty);
+//
+//            return ResponseEntity.ok(response);
+//        } catch (JsonProcessingException e) {
+//            logger.error("Invalid JSON format for property: {}", e.getMessage(), e);
+//            response.put("status", "error");
+//            response.put("message", "Invalid JSON format for property.");
+//            return ResponseEntity.badRequest().body(response);
+//        } catch (IOException e) {
+//            logger.error("Error processing property images: {}", e.getMessage(), e);
+//            response.put("status", "error");
+//            response.put("message", "Error processing property images.");
+//            return ResponseEntity.badRequest().body(response);
+//        } catch (Exception e) {
+//            logger.error("Unexpected error adding property: {}", e.getMessage(), e);
+//            response.put("status", "error");
+//            response.put("message", "An unexpected error occurred while adding the property.");
+//            return ResponseEntity.internalServerError().body(response);
+//        }
+//    }
+@PreAuthorize("hasRole('AGENT')")
+@PostMapping("/addProperty/{agentId}")
+public ResponseEntity<Map<String, Object>> addProperty(
+        @PathVariable Long agentId,
+        @RequestPart("property") String propertyJson,
+        @RequestPart(value = "images", required = false) List<MultipartFile> images,
+        @RequestHeader("Authorization") String authorizationHeader,
+        @RequestPart(value = "locations", required = false) String locationsJson) { // ✅ Expect locations as JSON string
 
-        try {
+    Map<String, Object> response = new HashMap<>();
 
-            // Extract token from the Authorization header
-            if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
-                throw new SecurityException("Missing or invalid Authorization header");
-            }
-            String token = authorizationHeader.substring(7); // Remove "Bearer "
-
-            // Validate token
-            boolean isValidToken = jwtUtil.validateToken(token);
-            if (!isValidToken) {
-                throw new SecurityException("Invalid or expired token");
-            }
-
-            // Convert JSON string to PendingProperty object
-            ObjectMapper objectMapper = new ObjectMapper();
-            PendingProperty pendingProperty = objectMapper.readValue(propertyJson, PendingProperty.class);
-
-            // Save the property
-            PendingProperty savedProperty = propertyNewService.addProperty(agentId, pendingProperty, images);
-
-            // Prepare successful response
-            response.put("status", "success");
-            response.put("message", "Property added successfully.");
-            response.put("property", savedProperty);
-
-            return ResponseEntity.ok(response);
-        } catch (JsonProcessingException e) {
-            logger.error("Invalid JSON format for property: {}", e.getMessage(), e);
-            response.put("status", "error");
-            response.put("message", "Invalid JSON format for property.");
-            return ResponseEntity.badRequest().body(response);
-        } catch (IOException e) {
-            logger.error("Error processing property images: {}", e.getMessage(), e);
-            response.put("status", "error");
-            response.put("message", "Error processing property images.");
-            return ResponseEntity.badRequest().body(response);
-        } catch (Exception e) {
-            logger.error("Unexpected error adding property: {}", e.getMessage(), e);
-            response.put("status", "error");
-            response.put("message", "An unexpected error occurred while adding the property.");
-            return ResponseEntity.internalServerError().body(response);
+    try {
+        // ✅ 1. Extract token from the Authorization header
+        if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
+            throw new SecurityException("Missing or invalid Authorization header");
         }
+        String token = authorizationHeader.substring(7); // Remove "Bearer "
+
+        // ✅ 2. Validate token
+        boolean isValidToken = jwtUtil.validateToken(token);
+        if (!isValidToken) {
+            throw new SecurityException("Invalid or expired token");
+        }
+
+        // ✅ 3. Convert JSON string to PendingProperty object
+        ObjectMapper objectMapper = new ObjectMapper();
+        PendingProperty pendingProperty = objectMapper.readValue(propertyJson, PendingProperty.class);
+
+//        // ✅ 4. Convert JSON string to List<Location>
+        List<Location> locations = new ArrayList<>();
+//        if (locationsJson != null && !locationsJson.isEmpty()) {
+//            locations = objectMapper.readValue(locationsJson, new TypeReference<List<Location>>() {});
+//
+//            // ✅ Link each location to the pending property
+//            for (Location location : locations) {
+//                location.setPendingProperty(pendingProperty);
+//            }
+//        }
+        if (locationsJson != null && !locationsJson.isEmpty()) {
+            locations = objectMapper.readValue(locationsJson, new TypeReference<List<Location>>() {});
+            for (Location location : locations) {
+                location.setPendingProperty(pendingProperty); // ✅ Ensure property is linked
+            }
+            pendingProperty.setLocations(locations); // ✅ Add locations to property before saving
+        }
+
+
+        // ✅ 5. Save the property
+        PendingProperty savedProperty = propertyNewService.addProperty(agentId, pendingProperty, images, locations);
+
+        // ✅ 6. Prepare successful response
+        response.put("status", "success");
+        response.put("message", "Property added successfully.");
+        response.put("property", savedProperty);
+
+
+
+        return ResponseEntity.ok(response);
+    } catch (JsonProcessingException e) {
+        logger.error("Invalid JSON format for property or locations: {}", e.getMessage(), e);
+        response.put("status", "error");
+        response.put("message", "Invalid JSON format for property or locations.");
+        return ResponseEntity.badRequest().body(response);
+    } catch (IOException e) {
+        logger.error("Error processing property images: {}", e.getMessage(), e);
+        response.put("status", "error");
+        response.put("message", "Error processing property images.");
+        return ResponseEntity.badRequest().body(response);
+    } catch (SecurityException e) {
+        logger.error("Security error: {}", e.getMessage(), e);
+        response.put("status", "error");
+        response.put("message", e.getMessage());
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+    } catch (Exception e) {
+        logger.error("Unexpected error adding property: {}", e.getMessage(), e);
+        response.put("status", "error");
+        response.put("message", "An unexpected error occurred while adding the property.");
+        return ResponseEntity.internalServerError().body(response);
     }
+}
 
 
     // Approve Property

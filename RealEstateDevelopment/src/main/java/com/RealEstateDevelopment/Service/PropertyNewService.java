@@ -1,5 +1,6 @@
 package com.RealEstateDevelopment.Service;
 
+import com.RealEstateDevelopment.Entity.Location;
 import com.RealEstateDevelopment.Entity.PendingProperty;
 import com.RealEstateDevelopment.Entity.PropertyNew;
 import jakarta.transaction.Transactional;
@@ -8,9 +9,10 @@ import java.util.List;
 
 public interface PropertyNewService {
 
-    @Transactional
-    PendingProperty addProperty(Long agentId, PendingProperty pendingProperty, List<MultipartFile> images) throws Exception;
+//    @Transactional
+//            PendingProperty addProperty(Long agentId, PendingProperty pendingProperty, List<MultipartFile> images, Location location) throws Exception;
 
+    public PendingProperty addProperty(Long agentId, PendingProperty pendingProperty, List<MultipartFile> images, List<Location> locations);
     @Transactional
     PropertyNew approveProperty(Long propertyId) throws Exception;
 
