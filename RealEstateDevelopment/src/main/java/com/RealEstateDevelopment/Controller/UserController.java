@@ -85,35 +85,6 @@ public class UserController {
         }
     }
 
-//    @PostMapping("/loginUser")
-//    public ResponseEntity<Map<String, Object>> loginUser(@RequestBody Map<String, String> loginDetails) {
-//        Map<String, Object> response = new HashMap<>();
-//        try {
-//            logger.info("User login attempt...");
-//            String username = loginDetails.get("username");
-//            String password = loginDetails.get("password");
-//
-//            if (username == null || password == null) {
-//                logger.warn("Username or password is missing.");
-//                response.put("status", 400);
-//                response.put("message", "Username and password are required.");
-//                return ResponseEntity.badRequest().body(response);
-//            }
-//
-//            Map<String, Object> loginResponse = userService.loginUser(username, password);
-//            response.put("status", 200);
-//            response.put("data", loginResponse);
-//            response.put("message", "User logged in successfully");
-//
-//            return ResponseEntity.ok(response);
-//        } catch (Exception e) {
-//            logger.error("Error during user login: {}", e.getMessage());
-//            response.put("status", 400);
-//            response.put("message", "Error during login: " + e.getMessage());
-//            return ResponseEntity.badRequest().body(response);
-//        }
-//    }
-
     @PostMapping("/loginUser")
     public ResponseEntity<Map<String, Object>> loginUser(@RequestBody Map<String, String> loginDetails, HttpServletResponse response) {
         Map<String, Object> responseBody = new HashMap<>();

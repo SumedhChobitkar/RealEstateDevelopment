@@ -128,35 +128,6 @@ public class UserServiceImpl implements UserService {
         }
     }
 
-//    @Override
-//    public Map<String, Object> loginUser(String username, String password) throws Exception {
-//        try {
-//            logger.info("Attempting to login user with username: {}", username);
-//
-//            User user = userRepository.findByUsername(username)
-//                    .orElseThrow(() -> new UsernameNotFoundException("User not found"));
-//
-//            if (!passwordEncoder.matches(password, user.getPassword())) {
-//                logger.warn("Invalid password for username: {}", username);
-//                throw new IllegalArgumentException("Invalid username or password.");
-//            }
-//
-//            // Generate JWT token
-//            String token = jwtUtil.generateToken(user.getId(), user.getUsername(), user.getRole().name());
-//
-//            // Prepare response with user details (excluding sensitive fields)
-//            Map<String, Object> response = new HashMap<>();
-//            response.put("token", token);
-//            response.put("username", user.getUsername());
-//            response.put("role", user.getRole());
-//            response.put("userId", user.getId());
-//
-//            return response;
-//        } catch (Exception e) {
-//            logger.error("Error during user login: {}", e.getMessage(), e);
-//            throw new Exception("Error during user login: " + e.getMessage(), e);
-//        }
-//    }
 
     @Override
     public Map<String, Object> loginUser(String username, String password) throws Exception {

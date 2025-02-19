@@ -12,6 +12,5 @@ import java.util.Optional;
 public interface LocationRepository extends JpaRepository<Location, Long> {
     @Query("SELECT l FROM Location l WHERE l.property.title = :title")
     List<Location> findByPropertyTitle(@Param("title") String title);// Fetch locations by property title
-    List<Location> findByName(String name);
-
+    List<Location> findByPropertyName(String propertyName);
 }

@@ -32,7 +32,7 @@ public interface PropertyNewService {
     List<PropertyNew> searchProperty(String keyword, Double minPrice, Double maxPrice,
                                        String propertyType, Integer minBedrooms, Integer maxBedrooms,
                                        Integer minBathrooms, Integer maxBathrooms,
-                                       String amenities, String features);
+                                       String amenities, String features, String city);
 
     List<PendingProperty> getPendingPropertiesByAgentId(Long agentId);
     void deleteProperty(Long propertyId);

@@ -32,35 +32,6 @@ public class LocationServiceImpl implements LocationService {
     @Autowired
     private PendingPropertyRepository pendingPropertyRepository;
 
-//
-//    @Override
-//    public Location saveLocation(Long propertyId, Location location) {
-//
-//
-//
-//
-//
-//        PropertyNew property = propertyRepository.findById(propertyId)
-//                .orElseThrow(() -> new RuntimeException("Property not found with ID: " + propertyId));
-//
-//        String propertyTitle = property.getTitle();
-//        if (propertyTitle == null) {
-//            throw new RuntimeException("Property title is null for ID: " + propertyId);
-//        }
-//        location.setPropertyName(propertyTitle);// Assuming Location has a field `propertyName
-//        location.setProperty(property);
-//        Location savedLocation = locationRepository.save(location);
-//
-//        // Send WebSocket message
-//        try {
-//            locationWebSocketHandler.broadcastMessage(savedLocation);
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//        }
-//
-//        return savedLocation;
-//    }
-
     @Override
     public Location saveLocation(Long propertyId, Location location) {
         // Fetch the property
@@ -91,35 +62,6 @@ public class LocationServiceImpl implements LocationService {
 
         return savedLocation;
     }
-//    @Override
-//    public Location saveLocation(Long propertyId, Location location) {
-//        if (propertyId != null) {
-//            // If PropertyNew exists, link the location
-//            PropertyNew property = propertyRepository.findById(propertyId)
-//                    .orElseThrow(() -> new RuntimeException("Property not found with ID: " + propertyId));
-//            location.setProperty(property);
-//            location.setPendingProperty(null); // Remove PendingProperty reference
-//        } else if (location.getPendingProperty() != null) {
-//            // ✅ If property is pending, link to PendingProperty instead
-//            PendingProperty pendingProperty = pendingPropertyRepository.findById(location.getPendingProperty().getPropertyId())
-//                    .orElseThrow(() -> new RuntimeException("PendingProperty not found with ID: " + location.getPendingProperty().getPropertyId()));
-//            location.setPendingProperty(pendingProperty);
-//            location.setProperty(null); // Ensure PropertyNew is NULL
-//        } else {
-//            throw new IllegalArgumentException("Either Property ID or PendingProperty must be provided");
-//        }
-//
-//        Location savedLocation = locationRepository.save(location);
-//
-//        // Send WebSocket message
-//        try {
-//            locationWebSocketHandler.broadcastMessage(savedLocation);
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//        }
-//
-//        return savedLocation;
-//    }
 
 
     @Override
@@ -199,11 +141,3 @@ public class LocationServiceImpl implements LocationService {
         }
     }
 }
-
-//    public String getGoogleMapsLink(Long locationId) {
-//        Location location = getLocationById(locationId);
-//        return "https://www.google.com/maps/search/?api=1&query="
-//                + location.getLatitude() + "," + location.getLongitude();
-//    }
-//
-//}
