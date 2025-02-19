@@ -29,6 +29,7 @@ public class PropertyNew {
     private String propertyType;
     private Integer bedrooms;
     private Integer bathrooms;
+    private String City;
 
     @ElementCollection
     private List<String> amenities;
@@ -54,11 +55,6 @@ public class PropertyNew {
     @ManyToOne
     @JoinColumn(name = "agent_id", nullable = false)
     private Agent agent; // The relationship to Agent
-
-//    // 🔹 Corrected Location Mapping
-//    @OneToMany(mappedBy = "property", cascade = CascadeType.ALL, orphanRemoval = true)
-//    @JsonIgnore
-//    private List<Location> locations = new ArrayList<>();
 
     @OneToMany(mappedBy = "property", cascade = CascadeType.ALL, orphanRemoval = true,  fetch = FetchType.EAGER)
     @JsonManagedReference("property-location")

@@ -2,7 +2,6 @@ package com.RealEstateDevelopment.Controller;
 
 import com.RealEstateDevelopment.Entity.Admin;
 import com.RealEstateDevelopment.Entity.PropertyNew;
-import com.RealEstateDevelopment.Entity.Role;
 import com.RealEstateDevelopment.Exception.UserNotFoundException;
 import com.RealEstateDevelopment.Repository.ForgotPasswordOtpRepository;
 import com.RealEstateDevelopment.Security.JwtUtil;
@@ -117,36 +116,6 @@ public class AdminController {
                 contentType.equalsIgnoreCase("image/png") ||
                 contentType.equalsIgnoreCase("image/jpg");
     }
-
-
-//    @PostMapping("/loginAdmin")
-//    public ResponseEntity<Map<String, Object>> loginAdmin(@RequestBody Map<String, String> loginDetails) {
-//        Map<String, Object> response = new HashMap<>();
-//        try {
-//            logger.info("Admin login attempt...");
-//            String username = loginDetails.get("username");
-//            String password = loginDetails.get("password");
-//
-//            if (username == null || password == null) {
-//                logger.warn("Username or password is missing.");
-//                response.put("status", 400);
-//                response.put("message", "Username and password are required.");
-//                return ResponseEntity.badRequest().body(response);
-//            }
-//
-//            Map<String, Object> loginResponse = adminService.loginAdmin(username, password);
-//            response.put("status", 200);
-//            response.put("data", loginResponse);
-//            response.put("message", "Admin logged in successfully");
-//
-//            return ResponseEntity.ok(response);
-//        } catch (Exception e) {
-//            logger.error("Error during admin login: {}", e.getMessage());
-//            response.put("status", 400);
-//            response.put("message", "Error during admin login: " + e.getMessage());
-//            return ResponseEntity.badRequest().body(response);
-//        }
-//    }
 
     @PostMapping("/loginAdmin")
     public ResponseEntity<Map<String, Object>> loginAdmin(@RequestBody Map<String, String> loginDetails, HttpServletResponse response) {

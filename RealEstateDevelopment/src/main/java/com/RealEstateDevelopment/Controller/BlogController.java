@@ -16,7 +16,6 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/blog")
@@ -26,21 +25,6 @@ public class BlogController {
 
     @Autowired
     private BlogService blogService;
-
-//    @PostMapping(value = "/saveBlog")
-//    public ResponseEntity<Blog> saveBlog(@RequestPart Blog blog, @RequestParam("image") MultipartFile image) {
-//        try {
-//            Blog savedBlog = blogService.saveBlog(blog, image);
-//            logger.info("Blog saved successfully with ID: {}", savedBlog.getId());
-//            return new ResponseEntity<>(savedBlog, HttpStatus.CREATED);
-//        } catch (IOException e) {
-//            logger.error("Error while saving blog image: {}", e.getMessage());
-//            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
-//        } catch (Exception e) {
-//            logger.error("Error while saving blog: {}", e.getMessage());
-//            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
-//        }
-//    }
 
     @PostMapping(value = "/saveBlog", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<Map<String, Object>> saveBlog(@RequestPart("blog") String blogJson,

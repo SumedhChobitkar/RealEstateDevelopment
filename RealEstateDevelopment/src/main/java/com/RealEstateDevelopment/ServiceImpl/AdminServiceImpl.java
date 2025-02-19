@@ -73,37 +73,6 @@ public class AdminServiceImpl implements AdminService {
         return "Admin registered successfully.";
     }
 
-//    @Override
-//    public Map<String, Object> loginAdmin(String username, String password) {
-//        try {
-//            logger.info("Admin login attempt for username: {}", username);
-//
-//            Admin admin = adminRepository.findByUsername(username)
-//                    .orElseThrow(() -> new UsernameNotFoundException("Admin not found"));
-//
-//            if (!passwordEncoder.matches(password, admin.getPassword())) {
-//                logger.warn("Invalid password for admin username: {}", username);
-//                throw new IllegalArgumentException("Invalid username or password.");
-//            }
-//
-//            // Generate JWT Token for Admin
-//            String token = jwtUtil.generateToken(admin.getAdminId(), admin.getUsername(), admin.getRole().name());
-//
-//            // Prepare response
-//            Map<String, Object> response = new HashMap<>();
-//            response.put("token", token);
-//            response.put("username", admin.getUsername());
-//            response.put("role", "ADMIN");
-//            response.put("adminId", admin.getAdminId());
-//
-//            logger.info("Admin login successful: {}", username);
-//            return response;
-//        } catch (Exception e) {
-//            logger.error("Error during admin login: {}", e.getMessage(), e);
-//            throw new RuntimeException("Error during admin login: " + e.getMessage(), e);
-//        }
-//    }
-
     @Override
     public Map<String, Object> loginAdmin(String username, String password) {
         try {
