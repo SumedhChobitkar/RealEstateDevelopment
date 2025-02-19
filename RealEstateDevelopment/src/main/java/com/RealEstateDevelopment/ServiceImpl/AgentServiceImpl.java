@@ -119,7 +119,6 @@ public class AgentServiceImpl implements AgentService {
         return savedAgent;
     }
 
-
     @Override
     public void rejectAgent(Long tempAgentId) throws Exception {
 
@@ -137,6 +136,37 @@ public class AgentServiceImpl implements AgentService {
         return temporaryAgentRepository.findAll();
     }
 
+//    @Override
+//    public Map<String, Object> loginAgent(String username, String password) throws Exception {
+//        try {
+//            logger.info("Agent login attempt for username: {}", username);
+//
+//            Agent agent = agentRepository.findByUserName(username)
+//                    .orElseThrow(() -> new UsernameNotFoundException("Agent not found"));
+//
+//            if (!passwordEncoder.matches(password, agent.getPassword())) {
+//                logger.warn("Invalid password for agent username: {}", username);
+//                throw new IllegalArgumentException("Invalid username or password.");
+//            }
+//
+//            // Generate JWT Token for Agent
+//            String token = jwtUtil.generateToken(agent.getId(), agent.getUserName(), agent.getRole().name());
+//
+//            // Prepare response
+//            Map<String, Object> response = new HashMap<>();
+//            response.put("token", token);
+//            response.put("username", agent.getUserName());
+//            response.put("role", "AGENT");
+//            response.put("agentId", agent.getId());
+//
+//            logger.info("Agent login successful: {}", username);
+//            return response;
+//        } catch (Exception e) {
+//            logger.error("Error during agent login: {}", e.getMessage(), e);
+//            throw new Exception("Error during agent login: " + e.getMessage(), e);
+//        }
+//    }
+
     @Override
     public Map<String, Object> loginAgent(String username, String password) throws Exception {
         try {
@@ -150,14 +180,17 @@ public class AgentServiceImpl implements AgentService {
                 throw new IllegalArgumentException("Invalid username or password.");
             }
 
-            // Generate JWT Token for Agent
-            String token = jwtUtil.generateToken(agent.getUserName(), agent.getRole().name());
+            // 🔹 Convert Role Enum to String
+            String role = agent.getRole().name();
 
-            // Prepare response
+            // 🔹 Generate JWT Token for Agent
+            String token = jwtUtil.generateToken(agent.getId(), agent.getUserName(), role);
+
+            // 🔹 Prepare response (excluding token for security)
             Map<String, Object> response = new HashMap<>();
-            response.put("token", token);
             response.put("username", agent.getUserName());
             response.put("role", "AGENT");
+            response.put("agentId", agent.getId());
 
             logger.info("Agent login successful: {}", username);
             return response;
