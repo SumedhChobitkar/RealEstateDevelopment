@@ -19,7 +19,8 @@ public class Blog {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    private String imagePath;
+    @Column(name = "image_path", columnDefinition = "LONGBLOB")
+    private byte[] imagePath;
     private String title;
     private LocalDate date;
     @Column(length = 5000)
