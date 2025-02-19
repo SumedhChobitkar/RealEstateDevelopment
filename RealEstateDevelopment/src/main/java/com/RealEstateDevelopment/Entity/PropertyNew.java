@@ -1,5 +1,7 @@
 package com.RealEstateDevelopment.Entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -52,4 +54,13 @@ public class PropertyNew {
     @ManyToOne
     @JoinColumn(name = "agent_id", nullable = false)
     private Agent agent; // The relationship to Agent
+
+//    // 🔹 Corrected Location Mapping
+//    @OneToMany(mappedBy = "property", cascade = CascadeType.ALL, orphanRemoval = true)
+//    @JsonIgnore
+//    private List<Location> locations = new ArrayList<>();
+
+    @OneToMany(mappedBy = "property", cascade = CascadeType.ALL, orphanRemoval = true,  fetch = FetchType.EAGER)
+    @JsonManagedReference("property-location")
+    private List<Location> locations = new ArrayList<>();
 }

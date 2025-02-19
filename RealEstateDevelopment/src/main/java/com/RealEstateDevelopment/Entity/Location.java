@@ -1,5 +1,6 @@
 package com.RealEstateDevelopment.Entity;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -15,14 +16,29 @@ public class Location {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String name;
+    private String propertyName;;
     private double latitude;
     private double longitude;
     private String route;
     private double distanceInKm;
 
+//    @ManyToOne
+//    @JoinColumn(name = "pending_property_id")
+//    @JsonIgnore
+//    private PendingProperty pendingProperty; // 🔹 Link to PendingProperty
+//
+//    @ManyToOne
+//    @JoinColumn(name = "property_id")
+//    @JsonIgnore
+//    private PropertyNew property; // 🔹 Link to Approved Property
+
     @ManyToOne
-    @JoinColumn(name = "property_id", nullable = false) // Foreign Key to Property
-    @JsonIgnore
-    private PropertyNew property;
+    @JoinColumn(name = "pending_property_id")
+    @JsonBackReference("pendingProperty-location")
+    private PendingProperty pendingProperty; // 🔹 Link to PendingProperty
+
+    @ManyToOne
+    @JoinColumn(name = "property_id")
+    @JsonBackReference("property-location")
+    private PropertyNew property; // 🔹 Link to Approved Property
 }

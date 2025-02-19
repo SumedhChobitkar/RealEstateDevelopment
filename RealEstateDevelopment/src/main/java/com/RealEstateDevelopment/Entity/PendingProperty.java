@@ -1,6 +1,7 @@
 package com.RealEstateDevelopment.Entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -58,4 +59,14 @@ public class PendingProperty {
     @ManyToOne
     @JoinColumn(name = "agent_id", nullable = false)
     private Agent agent; // Linking property to an agent
+
+
+//    // 🔹 Corrected Location Mapping
+//    @OneToMany(mappedBy = "pendingProperty", cascade = CascadeType.ALL, orphanRemoval = true)
+//    @JsonIgnore
+//    private List<Location> locations = new ArrayList<>();
+@OneToMany(mappedBy = "pendingProperty", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+@JsonManagedReference("pendingProperty-location")
+private List<Location> locations = new ArrayList<>();
+
 }
