@@ -30,8 +30,8 @@ public class BlogServiceImpl implements BlogService {
     private BlogRepository blogRepository;
 
     public Blog saveBlog(Blog blog, MultipartFile image) throws IOException {
-         String imagePath = saveImageAndGetImagePath(image);
-         blog.setImagePath(imagePath);
+        // String imagePath = saveImageAndGetImagePath(image);
+         blog.setImagePath(image.getBytes());
         blog.setDate(LocalDate.now());
         Blog savedBlog = blogRepository.save(blog);
         logger.info("Blog saved successfully with ID: {}", savedBlog.getId());
@@ -80,8 +80,8 @@ public class BlogServiceImpl implements BlogService {
             existingBlog.setTitle(blog.getTitle());
             existingBlog.setDescription(blog.getDescription());
             existingBlog.setDate(LocalDate.now());
-            String imagePath = saveImageAndGetImagePath(image);
-            blog.setImagePath(imagePath);
+            //String imagePath = saveImageAndGetImagePath(image);
+            blog.setImagePath(image.getBytes());
 
             return blogRepository.save(existingBlog);
         }
