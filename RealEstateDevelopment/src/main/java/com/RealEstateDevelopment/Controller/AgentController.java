@@ -7,7 +7,6 @@ import com.RealEstateDevelopment.Security.JwtUtil;
 import com.RealEstateDevelopment.Service.AgentService;
 import com.RealEstateDevelopment.ServiceImpl.LogoutService;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
@@ -100,7 +99,6 @@ public class AgentController {
         }
     }
 
-
     /**
      * Reject an agent by admin.
      */
@@ -178,18 +176,10 @@ public class AgentController {
             // Authenticate and get agent details
             Map<String, Object> loginResponse = agentService.loginAgent(username, password);
 
-            // 🔹 Generate JWT token
-            String token = jwtUtil.generateToken((Long) loginResponse.get("agentId"), username, (String) loginResponse.get("role"));
+            //  Generate JWT token
+            String token = jwtUtil.generateToken((Long) loginResponse.get("agentId"), username, "AGENT");
 
-            // 🔹 Store token in an HttpOnly cookie
-            Cookie jwtCookie = new Cookie("jwt_token", token);
-            jwtCookie.setHttpOnly(true);
-            jwtCookie.setSecure(true); // Enable only for HTTPS
-            jwtCookie.setPath("/");
-            jwtCookie.setMaxAge(60 * 60 * 24); // 1 day expiration
-            response.addCookie(jwtCookie); // ✅ Store token in cookies
-
-            // 🔹 Return agent details (without token in response body)
+            // Return agent details
             responseBody.put("status", 200);
             responseBody.put("data", loginResponse);
             responseBody.put("message", "Agent logged in successfully");

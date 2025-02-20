@@ -1,6 +1,5 @@
 package com.RealEstateDevelopment.Controller;
 
-
 import com.RealEstateDevelopment.Entity.Location;
 import com.RealEstateDevelopment.Entity.PendingProperty;
 import com.RealEstateDevelopment.Entity.PropertyNew;
@@ -45,7 +44,7 @@ public class PropertyNewController {
             @RequestPart("property") String propertyJson,
             @RequestPart(value = "images", required = false) List<MultipartFile> images,
             @RequestHeader("Authorization") String authorizationHeader,
-            @RequestPart(value = "locations", required = false) String locationsJson) { // ✅ Expect locations as JSON string
+            @RequestPart(value = "locations", required = false) String locationsJson) { // it should be in an Array
 
         Map<String, Object> response = new HashMap<>();
 
@@ -73,9 +72,9 @@ public class PropertyNewController {
                 locations = objectMapper.readValue(locationsJson, new TypeReference<List<Location>>() {
                 });
                 for (Location location : locations) {
-                    location.setPendingProperty(pendingProperty); // ✅ Ensure property is linked
+                    location.setPendingProperty(pendingProperty); // Ensure property is linked
                 }
-                pendingProperty.setLocations(locations); // ✅ Add locations to property before saving
+                pendingProperty.setLocations(locations); // Add locations to property before saving
             }
 
             //  5. Save the property

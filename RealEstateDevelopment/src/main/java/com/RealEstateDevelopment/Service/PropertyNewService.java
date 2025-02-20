@@ -9,9 +9,6 @@ import java.util.List;
 
 public interface PropertyNewService {
 
-//    @Transactional
-//            PendingProperty addProperty(Long agentId, PendingProperty pendingProperty, List<MultipartFile> images, Location location) throws Exception;
-
     public PendingProperty addProperty(Long agentId, PendingProperty pendingProperty, List<MultipartFile> images, List<Location> locations);
     @Transactional
     PropertyNew approveProperty(Long propertyId) throws Exception;
@@ -26,8 +23,6 @@ public interface PropertyNewService {
 
     @Transactional
     PropertyNew updateProperty(Long propertyId, PropertyNew updatedProperty, List<MultipartFile> newImages);
-
-   // PropertyNew updateAgentAndProperty(Long propertyId, PropertyNew updatedProperty, List<MultipartFile> newImages);
 
     List<PropertyNew> searchProperty(String keyword, Double minPrice, Double maxPrice,
                                        String propertyType, Integer minBedrooms, Integer maxBedrooms,

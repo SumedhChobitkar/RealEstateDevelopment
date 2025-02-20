@@ -1,12 +1,10 @@
 package com.RealEstateDevelopment.Entity;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
@@ -42,10 +40,6 @@ public class PendingProperty {
     @Enumerated(EnumType.STRING)
     private Status availability; // "AVAILABLE", "RENTED", "SOLD"
 
-//    @OneToMany(mappedBy = "pendingProperty", cascade = CascadeType.ALL, orphanRemoval = true)
-//    @JsonIgnore
-//    private List<PropertyImage> galleryImages = new ArrayList<>();
-
     @Lob
     @ElementCollection
     @CollectionTable(name = "pendingProperty_images", joinColumns = @JoinColumn(name = "property_id"))
@@ -60,13 +54,8 @@ public class PendingProperty {
     @JoinColumn(name = "agent_id", nullable = false)
     private Agent agent; // Linking property to an agent
 
-
-//    // 🔹 Corrected Location Mapping
-//    @OneToMany(mappedBy = "pendingProperty", cascade = CascadeType.ALL, orphanRemoval = true)
-//    @JsonIgnore
-//    private List<Location> locations = new ArrayList<>();
-@OneToMany(mappedBy = "pendingProperty", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-@JsonManagedReference("pendingProperty-location")
-private List<Location> locations = new ArrayList<>();
+    @OneToMany(mappedBy = "pendingProperty", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @JsonManagedReference("pendingProperty-location")
+    private List<Location> locations = new ArrayList<>();
 
 }

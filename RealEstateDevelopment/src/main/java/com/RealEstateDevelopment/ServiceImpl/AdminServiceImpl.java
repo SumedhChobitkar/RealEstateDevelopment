@@ -86,15 +86,13 @@ public class AdminServiceImpl implements AdminService {
                 throw new IllegalArgumentException("Invalid username or password.");
             }
 
-            // 🔹 Convert Role Enum to String
-            String role = admin.getRole().name();
-
             // Generate JWT Token for Admin
-            String token = jwtUtil.generateToken(admin.getAdminId(), admin.getUsername(), role);
+            String token = jwtUtil.generateToken(admin.getAdminId(), admin.getUsername(), "ADMIN");
 
-            // 🔹 Only return user details, no token in response
+            //  return user details in response
             Map<String, Object> response = new HashMap<>();
             response.put("username", admin.getUsername());
+            response.put("token", token);
             response.put("role", "ADMIN");
             response.put("adminId", admin.getAdminId());
 
@@ -106,7 +104,6 @@ public class AdminServiceImpl implements AdminService {
             throw new RuntimeException("Error during admin login: " + e.getMessage(), e);
         }
     }
-
 
     @Override
     public void logoutAdmin(String username) {
