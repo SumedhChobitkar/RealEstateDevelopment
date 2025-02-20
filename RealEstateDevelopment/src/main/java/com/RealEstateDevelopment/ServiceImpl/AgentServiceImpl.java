@@ -148,15 +148,13 @@ public class AgentServiceImpl implements AgentService {
                 throw new IllegalArgumentException("Invalid username or password.");
             }
 
-            // 🔹 Convert Role Enum to String
-            String role = agent.getRole().name();
+            //  Generate JWT Token for Agent
+            String token = jwtUtil.generateToken(agent.getId(), agent.getUserName(), "AGENT");
 
-            // 🔹 Generate JWT Token for Agent
-            String token = jwtUtil.generateToken(agent.getId(), agent.getUserName(), role);
-
-            // 🔹 Prepare response (excluding token for security)
+            //  Prepare response
             Map<String, Object> response = new HashMap<>();
             response.put("username", agent.getUserName());
+            response.put("token", token);
             response.put("role", "AGENT");
             response.put("agentId", agent.getId());
 
@@ -167,7 +165,6 @@ public class AgentServiceImpl implements AgentService {
             throw new Exception("Error during agent login: " + e.getMessage(), e);
         }
     }
-
 
     @Override
     public Agent updateAgent(Long id, Agent updatedAgent, MultipartFile profilePicture) throws Exception {
@@ -208,7 +205,6 @@ public class AgentServiceImpl implements AgentService {
             throw new Exception("Error updating agent: " + e.getMessage(), e);
         }
     }
-
 
     @Override
     public void deleteAgent(Long id) throws Exception {

@@ -5,9 +5,6 @@ import com.RealEstateDevelopment.Entity.Location;
 import java.util.List;
 
 public interface LocationService {
-    //Location saveLocation(Location location, String propertyTitle);
-
-//    Location saveLocation(String title, Location location);
 
     Location saveLocation(Long propertyId, Location location);
 
@@ -21,7 +18,4 @@ public interface LocationService {
 
     List<Location> getAllLocations();
 
-//    Location getLocationByName(String name);
-
-//    String getGoogleMapsLink(Long locationId);
 }

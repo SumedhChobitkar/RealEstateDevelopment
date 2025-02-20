@@ -74,9 +74,9 @@ public class PropertyNewServiceimpl implements PropertyNewService {
             //  Step 2: Set title and save locations
             if (locations != null && !locations.isEmpty()) {
                 for (Location location : locations) {
-                    location.setPendingProperty(savedProperty); // ✅ Set PendingProperty reference
-                    location.setPropertyName(savedProperty.getTitle()); // ✅ Set property title
-                    locationRepository.save(location); // ✅ Save each location separately
+                    location.setPendingProperty(savedProperty); //  Set PendingProperty reference
+                    location.setPropertyName(savedProperty.getTitle()); //  Set property title
+                    locationRepository.save(location); //  Save each location separately
                 }
             }
 
@@ -122,7 +122,7 @@ public class PropertyNewServiceimpl implements PropertyNewService {
             property.setGalleryImages(new ArrayList<>(pendingProperty.getImages()));
         }
 
-        // 🔹 Move locations to PropertyNew
+        //  Move locations to PropertyNew
         if (pendingProperty.getLocations() != null && !pendingProperty.getLocations().isEmpty()) {
             for (Location location : pendingProperty.getLocations()) {
                 location.setProperty(property); // Set new property reference

@@ -13,7 +13,6 @@ import java.util.Optional;
 @Repository
 public interface ForgotPasswordOtpRepository extends JpaRepository<ForgotPasswordOtp, Long> {
 
-
     Optional<ForgotPasswordOtp> findByOtp(String otp);
 
     @Query("SELECT o FROM ForgotPasswordOtp o WHERE o.user = :user OR o.admin = :admin OR o.agent = :agent")

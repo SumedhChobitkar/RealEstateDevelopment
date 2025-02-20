@@ -142,12 +142,13 @@ public class UserServiceImpl implements UserService {
                 throw new IllegalArgumentException("Invalid username or password.");
             }
 
-            // 🔹 Generate JWT token
-            String token = jwtUtil.generateToken(user.getId(), user.getUsername(), user.getRole());
+            //  Generate JWT token
+            String token = jwtUtil.generateToken(user.getId(), user.getUsername(), "USER");
 
-            // 🔹 Prepare response (excluding sensitive fields)
+            //  Prepare response
             Map<String, Object> response = new HashMap<>();
             response.put("username", user.getUsername());
+            response.put("token", token);
             response.put("role", user.getRole());
             response.put("userId", user.getId());
 
@@ -158,7 +159,6 @@ public class UserServiceImpl implements UserService {
             throw new Exception("Error during user login: " + e.getMessage(), e);
         }
     }
-
 
     @Override
     @Transactional
@@ -220,8 +220,6 @@ public class UserServiceImpl implements UserService {
             throw new RuntimeException("Failed to update user details", e);
         }
     }
-
-
 
     @Override
     public void deleteUser(Long id) throws Exception {
@@ -294,8 +292,6 @@ public class UserServiceImpl implements UserService {
             throw new Exception("Error changing password: " + e.getMessage(), e);
         }
     }
-
-
 
     @Override
     public void logoutUser(String username) throws Exception {

@@ -5,7 +5,6 @@ import com.RealEstateDevelopment.Entity.PendingProperty;
 import com.RealEstateDevelopment.Entity.PropertyNew;
 import com.RealEstateDevelopment.Handler.LocationWebSocketHandler;
 import com.RealEstateDevelopment.Repository.LocationRepository;
-
 import com.RealEstateDevelopment.Repository.PendingPropertyRepository;
 import com.RealEstateDevelopment.Repository.PropertyNewRepository;
 import com.RealEstateDevelopment.Service.LocationService;
@@ -13,9 +12,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
 import java.util.List;
-
 
 @Service
 public class LocationServiceImpl implements LocationService {

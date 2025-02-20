@@ -13,7 +13,6 @@ import com.RealEstateDevelopment.ServiceImpl.ForgotPasswordService;
 import com.RealEstateDevelopment.ServiceImpl.LogoutService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
@@ -132,21 +131,13 @@ public class AdminController {
                 return ResponseEntity.badRequest().body(responseBody);
             }
 
-            // Authenticate and get user details (without token)
+            // Authenticate and get user details
             Map<String, Object> loginResponse = adminService.loginAdmin(username, password);
 
             // Generate JWT Token
-            String token = jwtUtil.generateToken((Long) loginResponse.get("adminId"), username, (String) loginResponse.get("role"));
+            String token = jwtUtil.generateToken((Long) loginResponse.get("adminId"), username, "ADMIN");
 
-            // 🔹 Store token in an HttpOnly cookie
-            Cookie jwtCookie = new Cookie("jwt_token", token);
-            jwtCookie.setHttpOnly(true);
-            jwtCookie.setSecure(true); // Enable for HTTPS
-            jwtCookie.setPath("/");
-            jwtCookie.setMaxAge(60 * 60 * 24); // 1 day expiration
-            response.addCookie(jwtCookie);
-
-            // Return user details (without token)
+            // Return user details
             responseBody.put("status", 200);
             responseBody.put("data", loginResponse);
             responseBody.put("message", "Admin logged in successfully");
@@ -159,8 +150,6 @@ public class AdminController {
             return ResponseEntity.badRequest().body(responseBody);
         }
     }
-
-
 
     @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/deleteAdmin/{adminId}")
