@@ -34,8 +34,6 @@ public class EmailServiceImpl implements EmailService {
             logger.error("Failed to send email to {}", to, e);
         }
     }
-
-
     // Overloaded method to send an email from the agent's email to the admin for property approval.
 
     public void sendEmail(String from, String to, String subject, String body) {

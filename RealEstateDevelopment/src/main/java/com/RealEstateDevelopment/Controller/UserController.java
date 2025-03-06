@@ -5,9 +5,11 @@ import com.RealEstateDevelopment.Exception.UserNotFoundException;
 import com.RealEstateDevelopment.Repository.ForgotPasswordOtpRepository;
 import com.RealEstateDevelopment.Security.JwtUtil;
 import com.RealEstateDevelopment.Service.EmailService;
+import com.RealEstateDevelopment.Service.OTPService;
 import com.RealEstateDevelopment.Service.UserService;
 import com.RealEstateDevelopment.ServiceImpl.ForgotPasswordService;
 import com.RealEstateDevelopment.ServiceImpl.LogoutService;
+import com.RealEstateDevelopment.ServiceImpl.OTPServiceImpl;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletResponse;
@@ -48,6 +50,9 @@ public class UserController {
 
     @Autowired
     private LogoutService logoutService;
+
+    @Autowired
+    private OTPService otpService;
 
 
     @PostMapping("/registerTemporaryUser")
@@ -104,6 +109,8 @@ public class UserController {
             //  Generate JWT token
             String token = jwtUtil.generateToken((Long) loginResponse.get("userId"), username, "USER");
 
+            // Generate OTP
+            ResponseEntity<String> stringResponseEntity = otpService.sendOTP(username);
             //  Return user details
             responseBody.put("status", 200);
             responseBody.put("data", loginResponse);
@@ -349,5 +356,12 @@ public class UserController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
     }
-
+@PostMapping("/verifyOtp")
+    public ResponseEntity<String> verifyOtp(@RequestParam String username, @RequestParam String otp) {
+        try {
+            return otpService.verifyOTP(username, otp);
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("An unexpected error occurred: " + e.getMessage());
+        }
+    }
 }

@@ -50,6 +50,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/agents/loginAgent").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/admin/loginAdmin").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/users/loginUser").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/users/verifyOtp").permitAll()
+
 
                         // Allow logout for authenticated users
                         .requestMatchers(HttpMethod.POST, "/api/users/logoutUser").authenticated()
