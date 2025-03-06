@@ -26,6 +26,8 @@ public class User {
     private String mobileNo;
     private String address;
     private String gender;
+    private String otp;
+    private Long otpExpiryTime;
     
     @Enumerated(EnumType.STRING)
     private Role role;
