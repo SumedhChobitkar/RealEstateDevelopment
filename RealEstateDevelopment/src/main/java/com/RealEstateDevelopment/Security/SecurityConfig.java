@@ -62,6 +62,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/properties/**").hasAnyRole("ADMIN", "AGENT")
                         .requestMatchers("/api/forgotPassword/**").permitAll()
                         .requestMatchers("/api/blog/**").permitAll()
+                        .requestMatchers("/api/reviews/**").permitAll()
                         .requestMatchers("/api/locations/**").permitAll()
                         .anyRequest().authenticated()
                 )
